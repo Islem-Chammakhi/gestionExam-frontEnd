@@ -20,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* wrap the children with the authProvider juste bech les compoants yabda 3andhom accés lil globale state li hiya fil7ala mte3na token w role w email */}
         <AuthProvider>
           {children}
         </AuthProvider>

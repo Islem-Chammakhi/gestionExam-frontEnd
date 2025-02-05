@@ -1,26 +1,30 @@
 "use client"
 
-import React,{useState,useEffect,useContext} from 'react'
+import React,{useState,useEffect} from 'react'
+import {useRouter ,useSearchParams } from 'next/navigation'
 
-//import {useRouter} from 'next/router'
+import useAuth from '@/hooks/useAuth'
 
-import AuthContext from '../../context/authProvider'
+import axios from '../../api/axios'
 
-import axios from '../../api/axios';
-const LOGIN_URL = '/auth/login';
+const LOGIN_URL = '/auth/login'
 
 const LoginPage: React.FC = () => {
   // our global state to manage authentification
-  const {setAuth} = useContext(AuthContext)
+  const {setAuth} = useAuth()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errMsg, setErrMsg] = useState('')
-  const [success, setSuccess] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const from = searchParams.get("from") || "/admin"
 
   useEffect(() => {
     setErrMsg('');
   }, [email, password])
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,15 +38,13 @@ const LoginPage: React.FC = () => {
             withCredentials: true
         }
     )
-    console.log(JSON.stringify(response?.data))
-    console.log(JSON.stringify(response));
+
     const accessToken = response?.data?.accessToken
     const role = response?.data?.role
-    setAuth({ email, password, role, accessToken }) 
+    setAuth({ email, password, role, accessToken })
     setEmail('')
     setPassword('')
-    setSuccess(true)
-
+    router.push(from)
     } catch (err: any) {
         if (!err?.response) {
           setErrMsg('Aucune réponse du serveur')
@@ -58,13 +60,7 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <>
-      {success ? (
-          <section>
-              <h1>You are logged in!</h1>
-              <br />
-          </section>
-      ) : (
+
       <div>
         <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
           <div className="sm:mx-auto sm:w-full sm:max-w-sm">
@@ -136,8 +132,7 @@ const LoginPage: React.FC = () => {
             </form>
           </div>
         </div>
-      </div>)}
-    </>
+      </div>
   );
 }
 

@@ -10,7 +10,7 @@ interface AuthContextType {
   }
 const AuthContext = createContext<AuthContextType>({
     auth: {},
-    setAuth: () => {}
+    setAuth: ({}) => {}
   });
 
 interface AuthProviderProps {

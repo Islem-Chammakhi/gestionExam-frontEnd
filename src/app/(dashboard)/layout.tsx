@@ -1,13 +1,12 @@
+"use client"
+
 import Menu from "@/components/Menu";
 import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import Link from "next/link";
+import withAuth from "@/utils/withAuth";
 
-export default function DashboardLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="h-screen flex">
       {/* LEFT */}
@@ -30,3 +29,4 @@ export default function DashboardLayout({
     </div>
   );
 }
+export default withAuth(DashboardLayout, "ADMIN")
