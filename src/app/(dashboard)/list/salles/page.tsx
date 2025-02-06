@@ -8,6 +8,8 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { classesData, role } from "@/lib/data";
 import Image from "next/image";
+import RequireAuth from "@/utils/RequireAuth";
+import PersistLogin from "@/utils/PersistLogin";
 
 type Class = {
   id: number;
@@ -99,33 +101,38 @@ const ClassListPage = () => {
   const currentData = classesData.slice(startIndex, endIndex);
 
   return (
-    <div className="bg-white p-5 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">Room reservations</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
-            </button>
+    <PersistLogin>
+      <RequireAuth requiredRole="ADMIN">
+        <div className="bg-white p-5 rounded-md flex-1 m-4 mt-0">
+          {/* TOP */}
+          <div className="flex items-center justify-between">
+            <h1 className="hidden md:block text-lg font-semibold">Room reservations</h1>
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <TableSearch />
+              <div className="flex items-center gap-4 self-end">
+                <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
+                  <Image src="/filter.png" alt="" width={14} height={14} />
+                </button>
+                <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
+                  <Image src="/sort.png" alt="" width={14} height={14} />
+                </button>
+              </div>
+            </div>
           </div>
+          {/* LIST */}
+          <Table columns={columns} renderRow={renderRow} data={currentData} />
+          {/* PAGINATION */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onNextPage={handleNextPage}
+            onPrevPage={handlePrevPage}
+            onPageClick={handlePageClick}
+          />
         </div>
-      </div>
-      {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={currentData} />
-      {/* PAGINATION */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onNextPage={handleNextPage}
-        onPrevPage={handlePrevPage}
-        onPageClick={handlePageClick}
-      />
-    </div>
+      </RequireAuth>
+    </PersistLogin>
+
   );
 };
 

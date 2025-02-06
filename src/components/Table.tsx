@@ -21,7 +21,7 @@ const Table = ({
           ))}
         </tr>
       </thead>
-      <tbody> {/* Adds spacing above the first row */}
+      <tbody>
         {data.map((item) => renderRow(item))}
       </tbody>
     </table>

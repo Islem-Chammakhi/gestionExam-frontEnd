@@ -1,24 +1,18 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import useAxiosPrivate from '@/hooks/useAxiosPrivate';
+import { useRouter } from 'next/navigation';
 import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { role, subjectsData } from "@/lib/data";
 import Image from "next/image";
+import RequireAuth from "@/utils/RequireAuth";
+import PersistLogin from '@/utils/PersistLogin';
 
-type Exam = {
-  exam_id: number;
-  subject: string;
-  department_id: number;
-  exam_date: string;
-  start_time: string;
-  end_time: string;
-  coefficient: number;
-  duration: string;
-  salle: string;
-};
+
 
 const columns = [
   {
@@ -26,7 +20,7 @@ const columns = [
     accessor: "exam_id",
   },
   {
-    header: "Matiere",
+    header: "Matière",
     accessor: "subject",
   },
   {
@@ -38,15 +32,15 @@ const columns = [
     accessor: "exam_date",
   },
   {
-    header: "Start Time",
+    header: "heure de début",
     accessor: "start_time",
   },
   {
-    header: "End Time",
+    header: "heure de fin",
     accessor: "end_time",
   },
   {
-    header: "Duration",
+    header: "Durée",
     accessor: "duration",
   },
   {
@@ -63,12 +57,52 @@ const columns = [
   },
 ];
 
+type CoefficientKey = "ZERO_POINT_FIVE" | "ONE" | "ONE_POINT_FIVE" | "TWO";
+
+const coefTable: Record<CoefficientKey, number> = {
+  "ZERO_POINT_FIVE": 0.5,
+  "ONE": 1,
+  "ONE_POINT_FIVE": 1.5,
+  "TWO": 2,
+};
+
 const ITEMS_PER_PAGE = 10; // Number of items per page
 
 const ExamListPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
-
+  const axiosPrivate = useAxiosPrivate();
+  const router = useRouter();
+  const [exams, setExams] = useState<any[]>([]);
   const totalPages = Math.ceil(subjectsData.length / ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const getExams = async () => {
+        try {
+            const response = await axiosPrivate.get('/exams/getAllExams', {
+                signal: controller.signal
+            });
+            console.log(response.data);
+            if (response.status === 200) {
+              setExams(response.data); 
+            }
+            
+        } catch (err: any) {
+          console.log(err);
+          if (err.name !== "CanceledError") {
+            console.error("Erreur lors de la récupération des examens:", err);
+            router.push('/sign-in');
+        }
+          }
+    }
+
+    getExams();
+
+    return () => {
+        controller.abort();
+    }
+}, [axiosPrivate, router])
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -86,20 +120,20 @@ const ExamListPage = () => {
     setCurrentPage(page);
   };
 
-  const renderRow = (item: Exam) => (
+  const renderRow = (item: any) => (
     <tr
       key={item.exam_id}
       className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
     >
       <td className="p-5">{item.exam_id}</td>
-      <td>{item.subject}</td>
-      <td>{item.department_id}</td>
-      <td>{item.exam_date}</td>
-      <td>{item.start_time}</td>
-      <td>{item.end_time}</td>
+      <td>{item.FkSubject.name}</td>
+      <td>{item.FkSubject.department_id}</td>
+      <td>{item.exam_date.slice(0,10)}</td>
+      <td>{item?.rooms[0]?.start_time.slice(11,16) || "-"}</td>
+      <td>{item?.rooms[0]?.end_time.slice(11,16) || "-"}</td>
       <td>{item.duration}</td>
-      <td>{item.coefficient}</td>
-      <td>{item.salle}</td>
+      <td>{coefTable[item.FkSubject.coefficient as CoefficientKey]}</td>
+      <td>{item?.rooms[0]?.FkRoom?.room_name || "-"}</td>
       <td>
         <div className="flex items-center gap-2">
           {role === "admin" && (
@@ -117,37 +151,39 @@ const ExamListPage = () => {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentData = subjectsData.slice(startIndex, endIndex);
-
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">Tous les examens</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
-            </button>
-            {role === "admin" && <FormModal table="exam" type="create" />}
+    <PersistLogin>
+      <RequireAuth requiredRole="ADMIN">
+      <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
+        {/* TOP */}
+        <div className="flex items-center justify-between">
+          <h1 className="hidden md:block text-lg font-semibold">Tous les examens</h1>
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <TableSearch />
+            <div className="flex items-center gap-4 self-end">
+              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
+                <Image src="/filter.png" alt="" width={14} height={14} />
+              </button>
+              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
+                <Image src="/sort.png" alt="" width={14} height={14} />
+              </button>
+              {role === "admin" && <FormModal table="exam" type="create" />}
+            </div>
           </div>
         </div>
+        {/* LIST */}
+        <Table columns={columns} renderRow={renderRow} data={exams} />
+        {/* PAGINATION */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onNextPage={handleNextPage}
+          onPrevPage={handlePrevPage}
+          onPageClick={handlePageClick}
+        />
       </div>
-      {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={currentData} />
-      {/* PAGINATION */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onNextPage={handleNextPage}
-        onPrevPage={handlePrevPage}
-        onPageClick={handlePageClick}
-      />
-    </div>
+      </RequireAuth>
+    </PersistLogin>
   );
 };
-
-export default ExamListPage;
+export default ExamListPage

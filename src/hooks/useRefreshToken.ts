@@ -1,5 +1,8 @@
+"use client"
+
 import axios from "@/api/axios"
 import useAuth from "./useAuth"
+
 
 const useRefreshToken = () => {
     const { setAuth } = useAuth()
@@ -9,12 +12,17 @@ const useRefreshToken = () => {
             withCredentials: true //allow us to send cookies with our request mrgl ? lifih refresh token  
         });
         setAuth((prev: any) => {
-            console.log(JSON.stringify(prev))
-            console.log(response.data.accessToken)
-            return { ...prev, accessToken: response.data.accessToken }
+            // console.log(JSON.stringify(prev));
+            // console.log(response.data.accessToken);
+            return {
+                ...prev,
+                accessToken: response.data.accessToken,
+                role:response.data.role
+            }
         });
         return response.data.accessToken
     }
+
     return refresh
 }
 
