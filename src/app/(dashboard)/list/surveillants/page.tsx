@@ -63,19 +63,20 @@ const columns = [
 
 const ITEMS_PER_PAGE = 10; // Number of items per page
 
-const TeacherListPage = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+const TeacherListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
+  const { page, ...queryParams } = searchParams || {};
+  const currentPage = page ? parseInt(page) : 1
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [supervisors, setSupervisors] = useState<any[]>([]);
-  const totalPages = Math.ceil(teachersData.length / ITEMS_PER_PAGE);
+  const totalSupervisors = JSON.parse(sessionStorage.getItem('totalSupervisors') || '0')
 
   useEffect(() => {
     const controller = new AbortController();
 
     const getSupervisors = async () => {
         try {
-            const response = await axiosPrivate.get('/supervisors/getAllSupervisors', {
+            const response = await axiosPrivate.get('/supervisors/getAllSupervisors/'+currentPage, {
                 signal: controller.signal
             });
             console.log(response.data);
@@ -99,21 +100,7 @@ const TeacherListPage = () => {
     }
 }, [axiosPrivate, router])
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handlePageClick = (page: number) => {
-    setCurrentPage(page);
-  };
 
   const renderRow = (item: any) => (
     <tr
@@ -149,10 +136,6 @@ const TeacherListPage = () => {
     </tr>
   );
 
-  // Calculate the data to display for the current page
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentData = teachersData.slice(startIndex, endIndex);
 
   return (
     <PersistLogin>
@@ -178,10 +161,7 @@ const TeacherListPage = () => {
           {/* PAGINATION */}
           <Pagination
             currentPage={currentPage}
-            totalPages={totalPages}
-            onNextPage={handleNextPage}
-            onPrevPage={handlePrevPage}
-            onPageClick={handlePageClick}
+            count ={totalSupervisors}
           />
         </div>
     </RequireAuth>

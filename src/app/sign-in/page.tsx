@@ -18,7 +18,6 @@ const LoginPage: React.FC = () => {
   const [errMsg, setErrMsg] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
-  const from = searchParams.get("from") || "/admin"
 
   useEffect(() => {
     setErrMsg('');
@@ -44,6 +43,7 @@ const LoginPage: React.FC = () => {
     setAuth({ email, password, role, accessToken })
     setEmail('')
     setPassword('')
+    const from = role ==="ADMIN" ? "/admin" : role ==="CHEF" ? "/chef" :  "/directeur"
     router.push(from)
     } catch (err: any) {
         if (!err?.response) {

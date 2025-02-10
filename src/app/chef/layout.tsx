@@ -7,10 +7,32 @@ import Link from "next/link";
 import RequireAuth from "@/utils/RequireAuth";
 import PersistLogin from "@/utils/PersistLogin";
 
-const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// const menuItems = [
+//   {
+//     title: "MENU",
+//     items: [
+//       {
+//         icon: "/approved.png",
+//         label: "Valider planning",
+//         href: "/chef",
+//       },
+//       {
+//         icon: "/user.png",
+//         label: "Valider étudiants",
+//         href: "/",
+//       },
+//     ],
+//   },
+// ];
+
+export default function ChefLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <PersistLogin>
-      <RequireAuth requiredRole="ADMIN">
+      <RequireAuth requiredRole="CHEF">
         <div className="h-screen flex">
           {/* LEFT */}
           <div className="w-[14%] md:w-[8%] lg:w-[16%] xl:w-[14%] p-4">
@@ -19,9 +41,12 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
               className="flex items-center justify-center lg:justify-start gap-4"
             >
               <Image src="/logo.png" alt="logo" width={50} height={50} />
-              <span className="hidden lg:block font-semibold mt-1 text-gray-600 text-[14px]">Dashboard</span>
+              <span className="hidden lg:block font-semibold mt-1 text-gray-600 text-[14px]">
+                Dashboard
+              </span>
             </Link>
-            <Menu role="ADMIN" />
+            {/* Pass menuItems to Menu */}
+            <Menu role="CHEF" />
           </div>
 
           {/* RIGHT */}
@@ -32,7 +57,5 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
       </RequireAuth>
     </PersistLogin>
-
   );
 }
-export default DashboardLayout;

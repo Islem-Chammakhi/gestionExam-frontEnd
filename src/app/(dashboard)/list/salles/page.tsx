@@ -14,7 +14,6 @@ import RequireAuth from "@/utils/RequireAuth";
 import PersistLogin from "@/utils/PersistLogin";
 
 
-
 const columns = [
   {
     header: "Room ID",
@@ -45,21 +44,23 @@ const columns = [
   },
 ];
 
-const ITEMS_PER_PAGE = 10; // Number of items per page
 
-const ClassListPage = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
+  //récuperer la page courante :
+  const { page, ...queryParams } = searchParams || {};
+  // par default la prémiere page est égale à 1 :
+  const currentPage = page ? parseInt(page) : 1
+
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [rooms, setRooms] = useState<any[]>([]);
-  const totalPages = Math.ceil(classesData.length / ITEMS_PER_PAGE);
-
+  const totalRooms = JSON.parse(sessionStorage.getItem('totalRooms') || '0')
     useEffect(() => {
       const controller = new AbortController();
   
       const getRooms = async () => {
           try {
-              const response = await axiosPrivate.get('/rooms/getAllRooms', {
+              const response = await axiosPrivate.get('/rooms/getAllRooms/'+currentPage, {
                   signal: controller.signal
               });
               console.log(response.data);
@@ -70,7 +71,7 @@ const ClassListPage = () => {
           } catch (err: any) {
             console.log(err);
             if (err.name !== "CanceledError") {
-              console.error("Erreur lors de la récupération des examens:", err);
+              console.error("Erreur lors de la récupération des salles:", err);
               router.push('/sign-in');
           }
             }
@@ -81,25 +82,11 @@ const ClassListPage = () => {
       return () => {
           controller.abort();
       }
-  }, [axiosPrivate, router])
+  }, [axiosPrivate, router,page])
 
   
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handlePageClick = (page: number) => {
-    setCurrentPage(page);
-  };
 
   const renderRow = (item: any) => (
     <tr
@@ -124,10 +111,6 @@ const ClassListPage = () => {
     </tr>
   );
 
-  // Calculate the data to display for the current page
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentData = classesData.slice(startIndex, endIndex);
 
   return (
     <PersistLogin>
@@ -154,10 +137,7 @@ const ClassListPage = () => {
           {/* PAGINATION */}
           <Pagination
             currentPage={currentPage}
-            totalPages={totalPages}
-            onNextPage={handleNextPage}
-            onPrevPage={handlePrevPage}
-            onPageClick={handlePageClick}
+            count ={totalRooms}
           />
         </div>
       </RequireAuth>

@@ -5,16 +5,14 @@ interface AuthContextType {
 
     setAuth: React.Dispatch<React.SetStateAction<any>>
     auth: any
-    // persistLoginDone: boolean
-    // setPersistLoginDone: React.Dispatch<React.SetStateAction<boolean>>
+
 
   
   }
 const AuthContext = createContext<AuthContextType>({
     auth: {},
     setAuth: () => {},
-    // persistLoginDone: false,
-    // setPersistLoginDone: () => {}
+
   });
 
 interface AuthProviderProps {
@@ -29,7 +27,6 @@ interface AuthState {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [auth, setAuth] = useState<AuthState>({})
-    // const [persistLoginDone, setPersistLoginDone] = useState<boolean>(JSON.parse(localStorage.getItem("persistLoginDone") ?? "false"))
 
 
     return (

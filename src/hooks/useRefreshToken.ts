@@ -11,11 +11,9 @@ const useRefreshToken = () => {
         const response = await axios.get('/auth/refreshToken', {
             withCredentials: true //allow us to send cookies with our request mrgl ? lifih refresh token  
         });
-        setAuth((prev: any) => {
-            // console.log(JSON.stringify(prev));
-            // console.log(response.data.accessToken);
+        setAuth(() => {
             return {
-                ...prev,
+                email:response.data.email,
                 accessToken: response.data.accessToken,
                 role:response.data.role
             }

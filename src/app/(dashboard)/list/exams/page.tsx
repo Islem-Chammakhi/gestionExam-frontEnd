@@ -68,19 +68,20 @@ const coefTable: Record<CoefficientKey, number> = {
 
 const ITEMS_PER_PAGE = 10; // Number of items per page
 
-const ExamListPage = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
-  const totalPages = Math.ceil(subjectsData.length / ITEMS_PER_PAGE);
+  const { page, ...queryParams } = searchParams || {};
+  const currentPage = page ? parseInt(page) : 1
+  const totalExams = JSON.parse(sessionStorage.getItem('totalExams') || '0')
 
   useEffect(() => {
     const controller = new AbortController();
 
     const getExams = async () => {
         try {
-            const response = await axiosPrivate.get('/exams/getAllExams', {
+            const response = await axiosPrivate.get('/exams/getAllExams/'+currentPage, {
                 signal: controller.signal
             });
             console.log(response.data);
@@ -104,21 +105,7 @@ const ExamListPage = () => {
     }
 }, [axiosPrivate, router])
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handlePageClick = (page: number) => {
-    setCurrentPage(page);
-  };
 
   const renderRow = (item: any) => (
     <tr
@@ -148,9 +135,9 @@ const ExamListPage = () => {
   );
 
   // Calculate the data to display for the current page
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentData = subjectsData.slice(startIndex, endIndex);
+  // const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  // const endIndex = startIndex + ITEMS_PER_PAGE;
+  // const currentData = subjectsData.slice(startIndex, endIndex);
   return (
     <PersistLogin>
       <RequireAuth requiredRole="ADMIN">
@@ -175,11 +162,8 @@ const ExamListPage = () => {
         <Table columns={columns} renderRow={renderRow} data={exams} />
         {/* PAGINATION */}
         <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onNextPage={handleNextPage}
-          onPrevPage={handlePrevPage}
-          onPageClick={handlePageClick}
+            currentPage={currentPage}
+            count ={totalExams}
         />
       </div>
       </RequireAuth>
