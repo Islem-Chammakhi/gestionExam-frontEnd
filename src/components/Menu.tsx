@@ -29,17 +29,42 @@ const menuItems = [
         href: "/list/surveillants",
         visible: "ADMIN",
       },
+      // {
+      //   icon: "/approved.png",
+      //   label: "Valider planning",
+      //   href: "/chef",
+      //   visible: "CHEF",
+      // },
+      // {
+      //   icon: "/user.png",
+      //   label: "Valider étudiants",
+      //   href: "/",
+      //   visible: "CHEF",
+      // },
       {
-        icon: "/approved.png",
-        label: "Valider planning",
+        icon: "/home.png",
+        label: "Home",
         href: "/chef",
+        visible: "CHEF",
+
+      },
+      {
+        icon: "/check.png",
+        label: "Exams Validés",
+        href: "/list/validexam",
         visible: "CHEF",
       },
       {
-        icon: "/user.png",
-        label: "Valider étudiants",
-        href: "/",
+        icon: "/cross.png",
+        label: "Exams Non Validés",
+        href: "/list/notvalidexam",
         visible: "CHEF",
+      },
+      {
+        icon: "/approved.png",
+        label: "Valider planning",
+        href: "/directeur",
+        visible: "DIRECTEUR",
       },
     ]
   },

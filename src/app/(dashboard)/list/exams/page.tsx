@@ -11,6 +11,7 @@ import { role, subjectsData } from "@/lib/data";
 import Image from "next/image";
 import RequireAuth from "@/utils/RequireAuth";
 import PersistLogin from '@/utils/PersistLogin';
+import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
 
 
 
@@ -57,16 +58,8 @@ const columns = [
   },
 ];
 
-type CoefficientKey = "ZERO_POINT_FIVE" | "ONE" | "ONE_POINT_FIVE" | "TWO";
 
-const coefTable: Record<CoefficientKey, number> = {
-  "ZERO_POINT_FIVE": 0.5,
-  "ONE": 1,
-  "ONE_POINT_FIVE": 1.5,
-  "TWO": 2,
-};
 
-const ITEMS_PER_PAGE = 10; // Number of items per page
 
 const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
   const axiosPrivate = useAxiosPrivate();
@@ -118,26 +111,18 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
       <td>{item.exam_date.slice(0,10)}</td>
       <td>{item?.rooms[0]?.start_time.slice(11,16) || "-"}</td>
       <td>{item?.rooms[0]?.end_time.slice(11,16) || "-"}</td>
-      <td>{item.duration}</td>
+      <td>{durationTable[item.duration as DurationKey]}h</td>
       <td>{coefTable[item.FkSubject.coefficient as CoefficientKey]}</td>
       <td>{item?.rooms[0]?.FkRoom?.room_name || "-"}</td>
       <td>
         <div className="flex items-center gap-2">
-          {role === "admin" && (
-            <>
-              <FormModal table="exam" type="update" data={item} />
-              <FormModal table="exam" type="delete" id={item.exam_id} />
-            </>
-          )}
+              <FormModal  type="update" data={item} />
+              <FormModal  type="delete" id={item.exam_id} />
         </div>
       </td>
     </tr>
   );
 
-  // Calculate the data to display for the current page
-  // const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  // const endIndex = startIndex + ITEMS_PER_PAGE;
-  // const currentData = subjectsData.slice(startIndex, endIndex);
   return (
     <PersistLogin>
       <RequireAuth requiredRole="ADMIN">
@@ -154,7 +139,7 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
                 <Image src="/sort.png" alt="" width={14} height={14} />
               </button>
-              {role === "admin" && <FormModal table="exam" type="create" />}
+              <FormModal  type="create" />
             </div>
           </div>
         </div>

@@ -1,30 +1,20 @@
 "use client"
 
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import Pagination from "@/components/Pagination";
+import useAxiosPrivate from '@/hooks/useAxiosPrivate';
+import { useRouter } from 'next/navigation';
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { chefData } from "@/lib/data";
 import Image from "next/image";
-import UserCard from "@/components/UserCard";
+import useAuth from '@/hooks/useAuth';
+import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
 
-type Exam = {
-  exam_id: number;
-  subject: string;
-  department_id: number;
-  exam_date: string;
-  start_time: string;
-  end_time: string;
-  coefficient: number;
-  duration: string;
-  salle: string;
-  surveillant: string;
-};
 
 const columns = [
   { header: "Exam ID", accessor: "exam_id" },
   { header: "Matiere", accessor: "subject" },
-  { header: "Dep. ID", accessor: "department_id" },
   { header: "Date", accessor: "exam_date" },
   { header: "Start Time", accessor: "start_time" },
   { header: "End Time", accessor: "end_time" },
@@ -36,7 +26,7 @@ const columns = [
 
 const ITEMS_PER_PAGE = 10;
 
-const  ChefPage=()=> {
+const  NotValidatedExamByDep=()=> {
   {/* lel pagination */}
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(chefData.length / ITEMS_PER_PAGE);
@@ -44,36 +34,56 @@ const  ChefPage=()=> {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentData = chefData.slice(startIndex, endIndex);
+  const axiosPrivate = useAxiosPrivate();
+  const router = useRouter();
+  const [exams, setExams] = useState<any[]>([]);
+  const {auth}=useAuth()
 
+  useEffect(() => {
+    const controller = new AbortController();
 
+    const getExams = async () => {
+        try {
+            const response = await axiosPrivate.get('/exams/notValidatedExamsByDeaprtment/'+auth.user_id, {
+                signal: controller.signal
+            });
+            console.log(response.data);
+            if (response.status === 200) {
+              setExams(response.data); 
+            }
+            
+        } catch (err: any) {
+          console.log(err);
+          if (err.name !== "CanceledError") {
+            console.error("Erreur lors de la récupération des examens:", err);
+            router.push('/sign-in');
+        }
+          }
+    }
 
+    getExams();
 
-  const renderRow = (item: Exam) => (
+    return () => {
+        controller.abort();
+    }
+}, [axiosPrivate, router])
+
+  const renderRow = (item: any) => (
     <tr key={item.exam_id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
       <td className="p-5">{item.exam_id}</td>
-      <td>{item.subject}</td>
-      <td>{item.department_id}</td>
-      <td>{item.exam_date}</td>
-      <td>{item.start_time}</td>
-      <td>{item.end_time}</td>
-      <td>{item.duration}</td>
-      <td>{item.coefficient}</td>
-      <td>{item.salle}</td>
-      <td>{item.surveillant}</td>
+      <td>{item.fKExam.FkSubject.name}</td>
+      <td>{item.fKExam.exam_date.slice(0,10)}</td>
+      <td>{item.start_time.slice(11,16)}</td>
+      <td>{item.end_time.slice(11,16)}</td>
+      <td>{durationTable[item.fKExam.duration as DurationKey]}h</td>
+      <td>{coefTable[item.fKExam.FkSubject.coefficient as CoefficientKey ]}</td>
+      <td>{item.FkRoom.room_name}</td>
+      <td>{item.FkTeacher.FkUser.name}</td>
     </tr>
   );
 
   return (
     <div className="p-4 flex flex-col items-center w-full">
-      {/* USER CARDS */}
-      <div className="flex gap-4 justify-center flex-wrap w-full">
-        <UserCard type="Département" count="Informatique" />
-        <UserCard type="Chef de département" count="Hamel Lazher" />
-        <UserCard type="Enseignant" count={31} />
-        <UserCard type="Examen" count={255} />
-        <UserCard type="Etudiant" count={223} />
-      </div>
-
       {/* TABLE */}
       <div className="mt-16 w-full">
         {/* TOP */}
@@ -93,10 +103,13 @@ const  ChefPage=()=> {
         </div>
 
         {/* LIST */}
-        <Table columns={columns} renderRow={renderRow} data={currentData} />
+        <Table columns={columns} renderRow={renderRow} data={exams} />
 
         {/* PAGINATION */}
-        {/* <Pagination totalPages={totalPages} onPageChange={setCurrentPage} /> */}
+        {/* <Pagination
+            currentPage={currentPage}
+            count ={totalExams}
+        /> */}
       </div>
 
 
@@ -118,4 +131,4 @@ const  ChefPage=()=> {
     </div>
   );
 }
-export default ChefPage
+export default NotValidatedExamByDep

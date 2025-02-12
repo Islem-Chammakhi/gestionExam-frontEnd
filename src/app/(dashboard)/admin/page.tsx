@@ -19,7 +19,7 @@ const AdminPage = () => {
 
     const count = async () => {
         try {
-            const response = await axiosPrivate.get('/supervisors/counts', {
+            const response = await axiosPrivate.get('/supervisors/getCountsSummaryAdmin', {
                 signal: controller.signal
             });
             console.log(response.data);

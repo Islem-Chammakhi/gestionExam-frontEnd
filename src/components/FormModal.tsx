@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 import { useState } from "react";
 
 // Lazy loading
@@ -16,17 +17,11 @@ const forms: {
 };
 
 const FormModal = ({
-  table,
   type,
   data,
   id,
 }: {
-  table:
-    | "teacher"
-    | "student"
-    | "subject"
-    | "class"
-    | "exam"
+
   type: "create" | "update" | "delete";
   data?: any;
   id?: number;
@@ -40,22 +35,49 @@ const FormModal = ({
       : "bg-red-400";
 
   const [open, setOpen] = useState(false);
+  const axiosPrivate = useAxiosPrivate();
+  console.log("wiiiiiiiiiiiiiiiiiiiw",data)
+  const handleDelete=async (e: React.FormEvent)=>{
+    e.preventDefault()
+    const controller = new AbortController();
+    try {
+      const response = await axiosPrivate.delete('/exams/deleteExam/'+id, {
+          signal: controller.signal
+      });
+      console.log(response.data);
+      if (response.status === 201) {
+        console.log("examen supprimé")
+      }
+      
+  } catch (err: any) {
+    console.log(err);
+    if (err.name !== "CanceledError") {
+      console.error("Erreur lors de la supression de  l'examen:", err);
+  }
+
+
+  }
+}
 
   const Form = () => {
     if (type === "delete" && id) {
       return (
-        <form action="" className="p-2 flex flex-col gap-4">
+        <form onSubmit={handleDelete} className="p-2 flex flex-col gap-4">
           <span className="text-center font-medium">
-            All data will be lost. Are you sure you want to delete this {table}?
+            All data will be lost. Are you sure you want to delete this exam ?
           </span>
           <button className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center">
             Delete
           </button>
         </form>
       );
-    } else if ((type === "create" || type === "update") && forms[table]) {
-      return forms[table](type, data);
-    } else {
+    } else if ((type === "create")) {
+        return <ExamForm type="create"/>
+    }
+    else if ((type === "update")) {
+      return <ExamForm type="update" data={data}/>
+    }
+     else {
       return <span className="text-red-500">Form not found!</span>;
     }
   };

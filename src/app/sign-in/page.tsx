@@ -1,12 +1,10 @@
 "use client"
 
 import React,{useState,useEffect} from 'react'
-import {useRouter ,useSearchParams } from 'next/navigation'
-
+import {useRouter  } from 'next/navigation'
 import useAuth from '@/hooks/useAuth'
-
 import axios from '../../api/axios'
-
+import { jwtDecode } from 'jwt-decode'
 const LOGIN_URL = '/auth/login'
 
 const LoginPage: React.FC = () => {
@@ -17,7 +15,6 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('')
   const [errMsg, setErrMsg] = useState('')
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     setErrMsg('');
@@ -40,7 +37,10 @@ const LoginPage: React.FC = () => {
 
     const accessToken = response?.data?.accessToken
     const role = response?.data?.role
-    setAuth({ email, password, role, accessToken })
+    const decodedToken: any = jwtDecode(accessToken)
+    const user_id=decodedToken.userInfo?.id
+    console.log("user id is :",user_id)
+    setAuth({ email, password, role, accessToken,user_id })
     setEmail('')
     setPassword('')
     const from = role ==="ADMIN" ? "/admin" : role ==="CHEF" ? "/chef" :  "/directeur"
