@@ -4,27 +4,13 @@ import { useState,useEffect } from 'react';
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { directeurData } from "@/lib/data";
 import Image from "next/image";
 import UserCard from "@/components/UserCard";
 import DepartmentCard from '@/components/DepartmentCard';
 import useAxiosPrivate from '@/hooks/useAxiosPrivate';
-import axios from '@/api/axios';
 import { useRouter } from 'next/navigation';
 import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
 
-type Exam = {
-  exam_id: number;
-  subject: string;
-  department_id: number;
-  exam_date: string;
-  start_time: string;
-  end_time: string;
-  coefficient: number;
-  duration: string;
-  salle: string;
-  surveillant: string;
-};
 
 const columns = [
   { header: "Exam ID", accessor: "exam_id" },
@@ -49,6 +35,7 @@ export default function DirecteurPage({searchParams}:{searchParams?:{[key:string
   const currentPage = page ? parseInt(page) : 1
   const [exams, setExams] = useState<any[]>([]);
   const [count, setCount] = useState<any>({})
+  const [selectedDepartment, setSelectedDepartment] = useState<number>(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,7 +44,7 @@ export default function DirecteurPage({searchParams}:{searchParams?:{[key:string
         try {
             const [response1, response2] = await Promise.all([
               axiosPrivate.get("/supervisors/getCountsSummaryDirector",{signal: controller.signal}), // Première API
-              axiosPrivate.get("/exams/getExamsByDirector/",{signal: controller.signal}), // Deuxième API
+              axiosPrivate.get("/exams/getExamsByDirector/"+currentPage,{signal: controller.signal}), // Deuxième API
             ]);
             if (response2.status === 200) {
               setExams(response2.data);
@@ -79,6 +66,10 @@ export default function DirecteurPage({searchParams}:{searchParams?:{[key:string
         controller.abort();
     }
 }, [axiosPrivate, router])
+
+const filteredExams = selectedDepartment>0
+  ? exams.filter((exam) => exam.fKExam.FkSubject.department_id === selectedDepartment)
+  : exams;
 
   const renderRow = (item: any) => (
     <tr key={item.exam_id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
@@ -136,48 +127,54 @@ export default function DirecteurPage({searchParams}:{searchParams?:{[key:string
         </div>
 
         {/* LIST */}
-        <Table columns={columns} renderRow={renderRow} data={exams} />
+        <Table columns={columns} renderRow={renderRow} data={filteredExams} />
 
         {/* PAGINATION */}
-        <Pagination
+        {selectedDepartment === 0 &&<Pagination
             currentPage={currentPage}
             count ={count.totalExams}
-        />
+        />}
       </div>
 
       {/* DEP CARDS */}
       <div className="flex flex-wrap justify-center gap-4 w-full mt-10">
         {/* CARD0 */}
-        <DepartmentCard imageSrc="/logo.png" title="Tous les départements" />
+        <DepartmentCard 
+        imageSrc="/logo.png" 
+        title="Tous les départements" 
+        onClick={() => setSelectedDepartment(0)}
+        />
 
         {/* CARD1 */}
         <DepartmentCard
           imageSrc="/lap.png"
           title="Département Informatique"
-          statusText="Status de validation:"
-          statusIcon="/validated.png"
+          status={count?.examByDep?.length && count?.examByDep[0]}
+          onClick={() => setSelectedDepartment(1)}
+
         />
 
         {/* CARD2 */}
         <DepartmentCard
           imageSrc="/math.png"
           title="Département Mathématiques"
-          statusText="Status de validation:"
-          statusIcon="/notvalidated.png"
+          onClick={() => setSelectedDepartment(3)}
+          status={count?.examByDep?.length && count?.examByDep[2]}
+
         />
 
         {/* CARD3 */}
         <DepartmentCard
           imageSrc="/elec.png"
           title="Département Electrique"
-          statusText="Status de validation:"
-          statusIcon="/notvalidated.png"
           imageClassName="absolute w-40 h-40 mb-14 -right-16 -bottom-16" // Custom positioning for this card
+          status={count?.examByDep?.length && count?.examByDep[1]}
+          onClick={() => setSelectedDepartment(2)}
         />
       </div>
 
       {/* BUTTON TEXT */}
-      <div className="text-center text-sm text-gray-700 mt-10">
+      {exams.length>0 && <div className="text-center text-sm text-gray-700 mt-10">
         <p>
           Après avoir vérifié les plannings de votre département, vous devrez
           cliquer sur le bouton <strong>Valider</strong>.
@@ -191,10 +188,10 @@ export default function DirecteurPage({searchParams}:{searchParams?:{[key:string
           .
         </p>
         <p>* Cette action est irréversible *</p>
-      </div>
+      </div>}
 
       {/* VALIDER BUTTON */}
-      <div className="w-full mt-8 mb-4">
+      {exams.length>0 && <div className="w-full mt-8 mb-4">
         <button
           type="button"
           className="w-full bg-[#1c933b] text-white font-semibold py-2 rounded-lg shadow-lg hover:bg-[#41c237] transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -202,7 +199,7 @@ export default function DirecteurPage({searchParams}:{searchParams?:{[key:string
         >
           Valider toutes les entrées
         </button>
-      </div>
+      </div>}
       
     </div>
   );

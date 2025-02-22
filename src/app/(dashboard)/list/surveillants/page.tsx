@@ -7,7 +7,6 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import SurveillantModal from "@/components/SurveillantModal";
 import { role, teachersData } from "@/lib/data";
 import Image from "next/image";
 import Link from "next/link";
@@ -61,7 +60,7 @@ const columns = [
   },
 ];
 
-const ITEMS_PER_PAGE = 10; // Number of items per page
+
 
 const TeacherListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
   const { page, ...queryParams } = searchParams || {};
@@ -127,8 +126,8 @@ const TeacherListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) =
         <div className="flex items-center gap-2">
           {role === "admin" && (
             <>
-              <SurveillantModal table="teacher" type="assign" />
-              <SurveillantModal table="teacher" type="view" />
+              <FormModal table="surveillant" type="assign" />
+              <FormModal table="surveillant" type="view" />
             </>
           )}
         </div>
@@ -144,7 +143,7 @@ const TeacherListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) =
           {/* TOP */}
           <div className="flex items-center justify-between">
             <h1 className="hidden md:block text-lg font-semibold">Enseignants </h1>
-            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto  mb-8">
               <TableSearch />
               <div className="flex items-center gap-4 self-end">
                 <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">

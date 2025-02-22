@@ -1,177 +1,302 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, FieldErrors } from "react-hook-form";
 import { z } from "zod";
-import { useState, useEffect, useRef } from "react";
 import InputField from "../InputField";
-import { subjectsData } from "../../lib/data";
+import useAxiosPrivate from "@/hooks/useAxiosPrivate";
+import { useState,useEffect } from "react";
+import { useRouter } from 'next/navigation';
+import { CoefficientKey,coefTable,durationTable,DurationKey} from '@/lib/data';
 
-// Schema validation
-const schema = z.object({
-  subject: z.string().min(1, { message: "Subject is required!" }),
-  exam_date: z.string().min(1, { message: "Exam date is required!" }),
-  duration: z.string().min(1, { message: "Duration is required!" }),
+// Schéma pour la création
+const createSchema = z.object({
+  examen: z.string().min(1, { message: "Examen est requis!" }),
+  duration: z.string().min(1, { message: "Durée est requis!" }),
+  date: z.string().min(1, { message: "Date est requis!" }),
 });
 
-type Inputs = z.infer<typeof schema>;
+// Schéma pour la mise à jour
+const updateSchema = z.object({
+  date: z.string().min(1, { message: "Date est requis!" }),
+});
 
-const ExamForm = ({ type, data }: { type: "create" | "update"; data?: any }) => {
+type CreateInputs = z.infer<typeof createSchema>;
+type UpdateInputs = z.infer<typeof updateSchema>;
+
+interface Subject {
+  name: string,
+  coefficient: string,
+  subject_id:number,
+  department_id:number
+}
+
+const ExamForm = ({type,data,id,addExam,updateExam}: {
+  type: "create" | "update";
+  data?: any;
+  id?: number;
+  addExam ? :(id: number) => void;
+  updateExam?: (updatedExam: any)=>void
+}) => {
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
-  } = useForm<Inputs>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      subject: data?.subject || "",
-      exam_date: data?.exam_date || "",
-      duration: data?.duration || "",
-    },
+  } = useForm<CreateInputs | UpdateInputs>({
+    resolver: zodResolver(type === "create" ? createSchema : updateSchema),
   });
-
-  const [searchTerm, setSearchTerm] = useState(data?.subject || "");
-  const [filteredSubjects, setFilteredSubjects] = useState(subjectsData);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [coefficient, setCoefficient] = useState(data?.coefficient || ""); // State for coefficient
-  const dropdownRef = useRef<HTMLDivElement>(null); // Ref for dropdown
+  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [selectedCoefficient, setSelectedCoefficient] = useState<number | null>(null)
+  const axiosPrivate = useAxiosPrivate();
+  const router = useRouter();
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowDropdown(false); // Close dropdown when clicking outside
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    setFilteredSubjects(
-      subjectsData
-        .filter((subject) =>
-          subject.subject.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .sort((a, b) => a.subject.localeCompare(b.subject)) // Sort alphabetically
-    );
-  }, [searchTerm]);
-
-  // Watch the subject field to update the coefficient dynamically
-  const selectedSubject = watch("subject");
-  useEffect(() => {
-    if (selectedSubject) {
-      const selectedSubjectData = subjectsData.find(
-        (subject) => subject.subject === selectedSubject
-      );
-      setCoefficient(selectedSubjectData?.coefficient || "");
-    } else {
-      setCoefficient(""); // Clear coefficient if no subject is selected
+    const controller = new AbortController();
+  
+    const getSubjects= async () => {
+        try {
+            const response = await axiosPrivate.get('/subjects/getAllSubjects', {
+                signal: controller.signal
+            });
+            console.log(response.data);
+            if (response.status === 200) {
+              setSubjects(response.data); 
+            }   
+        } catch (err: any) {
+          console.log(err);
+          if (err.name !== "CanceledError") {
+            console.error("Erreur lors de la récupération des matiéres:", err);
+            router.push('/sign-in');
+        }
+          }
     }
-  }, [selectedSubject]);
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
+    if (subjects.length === 0) {
+      getSubjects();
+    }
+    
+    console.log(subjects,"wiiiiiiiiiiiiiiw")
+
+    return () => {
+        controller.abort();
+    }
+}, [axiosPrivate, router])
+
+const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const selectedSubject = subjects.find(subject => subject.name === event.target.value);
+  setSelectedCoefficient(selectedSubject ? coefTable[selectedSubject.coefficient  as CoefficientKey] : null);
+};
+
+  const __addExam = handleSubmit(async (formData) => {
+    const data = formData as CreateInputs
+    const selectedSubject = subjects.find(subject => subject.name === data.examen);
+
+    // Trouver la clé correspondant à la durée sélectionnée
+    const selectedDurationKey = (Object.keys(durationTable) as DurationKey[]).find(key => durationTable[key] === Number(data.duration));
+    const controller = new AbortController();
+    try {
+      const response = await axiosPrivate.post('/exams/createExam/', 
+      {
+        subject_id: selectedSubject?.subject_id,
+        duration: selectedDurationKey,
+        exam_date: data.date,
+      },
+      {
+        signal: controller.signal,
+      }
+    );
+    
+      console.log(response.data);
+      if (response.status === 201) {
+        console.log("<t5azwa9na",response.data)
+        const newExam = await axiosPrivate.get('/exams/getExamById/'+response.data.exam_id, {
+          signal: controller.signal
+      });
+      console.log(response.data);
+      if (newExam.status === 200) {
+        setSubjects(response.data); 
+      }   
+        addExam && addExam(newExam.data)
+      }
+      
+  } catch (err: any) {
+    console.log(err);
+    if (err.name !== "CanceledError") {
+      console.error("Erreur lors de la récupération des examens:", err);        
+      alert("❌ Erreur lors de l'ajout' de l'examen : " + (err.response?.data?.message || err.message));
+  }
+  }});
+
+
+  const __updateExam = handleSubmit(async (formData) => {
+    const inpuForm = formData as UpdateInputs;
+    const controller = new AbortController();
+    try {
+      const response = await axiosPrivate.put('/exams/updateExam/'+data.exam_id, 
+      {
+        exam_date: inpuForm.date,
+      },
+      {
+        signal: controller.signal,
+      }
+    );
+      if (response.status === 201) {
+        console.log(":) t5azwa9na",response.data)}
+        updateExam && updateExam(response.data)
+
+    } catch (err: any) {
+      console.log(err);
+      if (err.name !== "CanceledError") {
+      console.error("Erreur lors de la mise à jour de l'examen:", err);        
+      alert("❌ Erreur lors de la mise à jour de l'examen: " + (err.response?.data?.message || err.message));}
+      }
   });
 
   return (
-    <form className="flex flex-col gap-8 p-3" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">{type === "create" ? "Create a new exam" : "Update exam"}</h1>
+    <>
 
-      <div className="flex flex-col gap-4">
-        {/* Subject and Coefficient Fields */}
-        <div className="flex gap-4">
-          {/* Searchable Subject Dropdown */}
-          <div className="flex flex-col gap-2 relative flex-1" ref={dropdownRef}>
-            <label htmlFor="subject" className="font-medium text-sm text-gray-700">
-              Subject
-            </label>
-            <input
-              type="text"
-              {...register("subject")}
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setShowDropdown(true);
-              }}
-              onFocus={() => setShowDropdown(true)}
-              className="p-2 border rounded-md text-sm"
-              placeholder="Search for a subject..."
-              autoComplete="off"
+      {/* CREATE FORM */}
+      {type === "create" && (
+        <form className="flex flex-col gap-8 p-3" onSubmit={__addExam}>
+          {/* TITRE */}
+          <h1 className="text-xl font-semibold text-center">Créer un nouveau examen</h1>
+
+          {/* CONTENU */}
+          <div className="flex justify-between flex-wrap gap-4">
+
+            <div className="flex gap-4 w-full">
+
+              {/* Matière Field (Dropdown list) */}
+              <div className="flex flex-col gap-2 w-3/4">
+                <label className="text-xs text-gray-500">Examen</label>
+                <select
+                  {...register("examen")} // Register the examen field
+                  className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+                  onChange={handleExamenChange}
+                >
+                  <option value="">Sélectionnez un examen</option>
+                  {
+                    subjects && subjects.map((matiere) => (
+                      <option key={matiere.subject_id} value={matiere.name}>
+                        {matiere.name}
+                      </option>
+                    ))
+                  }
+                </select>
+                {type === "create" && (errors as FieldErrors<CreateInputs>).examen && (
+                  <span className="text-red-500 text-xs">{(errors as FieldErrors<CreateInputs>).examen?.message}</span>
+                )}
+              </div>
+
+                {/* Coefficient Field */}
+                <div className="flex flex-col gap-2 w-1/4">
+                  <label className="text-xs text-gray-500">Coefficient</label>
+                  <input
+                    type="number"
+                    className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                    value={selectedCoefficient !== null ? selectedCoefficient : ""}
+                    readOnly
+                  />
+                </div>
+
+            </div>
+
+            {/* Durée Field (Dropdown) */}
+            <div className="flex flex-col gap-2 w-full">
+              <label className="text-xs text-gray-500">Durée</label>
+              <select
+                {...register("duration")} // Register the duration field
+                className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+              >
+                <option value="">Sélectionnez une durée</option>
+                <option value="1">1h</option>
+                <option value="1.5">1.5h</option>
+                <option value="2">2h</option>
+              </select>
+              {type === "create" && (errors as FieldErrors<CreateInputs>).duration && (
+                <span className="text-red-500 text-xs">{(errors as FieldErrors<CreateInputs>).duration?.message}</span>
+              )}
+            </div>
+
+
+            {/* Date Field */}
+            <InputField
+              label="Date"
+              name="date"
+              type="date"
+              register={register}
+              error={errors?.date}
             />
-            {errors.subject && <span className="text-red-500">{errors.subject.message}</span>}
-
-            {/* Dropdown List */}
-            {showDropdown && filteredSubjects.length > 0 && (
-              <ul className="absolute z-10 left-0 top-full mt-1 w-full bg-white border rounded-md shadow-md max-h-40 overflow-y-auto">
-                {filteredSubjects.map((exam) => (
-                  <li
-                    key={exam.exam_id}
-                    className="p-2 hover:bg-gray-200 cursor-pointer text-sm"
-                    onClick={() => {
-                      setSearchTerm(exam.subject);
-                      setValue("subject", exam.subject);
-                      setShowDropdown(false);
-                    }}
-                  >
-                    {exam.subject}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
 
-          {/* Coefficient Field */}
-          <div className="flex flex-col gap-2 w-1/4">
-            <label htmlFor="coefficient" className="font-medium text-sm text-gray-700">
-              Coefficient
-            </label>
-            <input
-              type="text"
-              value={coefficient}
-              readOnly
-              className="p-2 border rounded-md bg-gray-100 cursor-not-allowed text-sm"
+          {/* BUTTON CREER */}
+          <button className="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-400 transition-colors">
+            Créer
+          </button>
+        </form>
+      )}
+      
+
+      {/* UPDATE FORM */}
+      {type === "update" && (
+        <form className="flex flex-col gap-8 p-3" onSubmit={__updateExam}>
+          {/* TITRE */}
+          <h1 className="text-xl font-semibold text-center">Modifier un examen</h1>
+
+          {/* CONTENU */}
+          <div className="flex justify-between flex-wrap gap-4">
+            {/* Matière and Coefficient Fields */}
+            <div className="flex gap-4 w-full">
+              {/* Matière Field (Locked Text Field) */}
+              <div className="flex flex-col gap-2 w-3/4">
+                <label className="text-xs text-gray-500">Examen</label>
+                <input
+                  type="text"
+                  className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                  readOnly
+                  value={data && data.FkSubject.name}
+                />
+              </div>
+
+              {/* Coefficient Field (Locked) */}
+              <div className="flex flex-col gap-2 w-1/4">
+                <label className="text-xs text-gray-500">Coefficient</label>
+                <input
+                  type="number"
+                  className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                  readOnly
+                  value={data && coefTable[data.FkSubject.coefficient as CoefficientKey]}
+                />
+              </div>
+            </div>
+
+            {/* Durée Field (Locked Text Field) */}
+            <div className="flex flex-col gap-2 w-full">
+              <label className="text-xs text-gray-500">Durée</label>
+              <input
+                type="text"
+                className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                readOnly
+                value={data && durationTable[data.duration as DurationKey]+"h"}
+              />
+            </div>
+
+            {/* Date Field */}
+            <InputField
+              label="Date"
+              name="date"
+              type="date"
+              register={register}
+              error={errors?.date}
             />
+
           </div>
-        </div>
-
-        {/* Exam Date Field */}
-        <div className="flex flex-col">
-          <label htmlFor="exam_date" className="font-medium text-sm text-gray-700">Exam Date</label>
-          <InputField
-            label=""
-            name="exam_date"
-            type="date"
-            defaultValue={data?.exam_date}
-            register={register}
-            error={errors?.exam_date}
-          />
-          {errors?.exam_date && <span className="text-red-500">{errors.exam_date.message}</span>}
-        </div>
-
-        {/* Duration Dropdown */}
-        <div className="flex flex-col gap-2">
-          <label htmlFor="duration" className="font-medium text-sm text-gray-700">Duration</label>
-          <select {...register("duration")} defaultValue={data?.duration || ""} className="p-2 border rounded-md text-sm">
-            <option value="" disabled>
-              Select duration
-            </option>
-            <option value="0.5h">0.5h</option>
-            <option value="1h">1h</option>
-            <option value="1.5h">1.5h</option>
-            <option value="2h">2h</option>
-          </select>
-          {errors?.duration && <span className="text-red-500">{errors.duration.message}</span>}
-        </div>
-      </div>
-
-      {/* Submit Button */}
-      <button className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
-      </button>
-    </form>
+          <button className="bg-blue-500 text-white text-base p-2 rounded-md hover:bg-blue-400 transition-colors" >
+            Modifier
+          </button>
+        </form>
+      )}
+    </>
   );
 };
 

@@ -24,27 +24,24 @@ const columns = [
   { header: "Surveillant", accessor: "surveillant" },
 ];
 
-const ITEMS_PER_PAGE = 10;
 
-const  NotValidatedExamByDep=()=> {
-  {/* lel pagination */}
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(chefData.length / ITEMS_PER_PAGE);
-  // Calculate the current page data
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentData = chefData.slice(startIndex, endIndex);
+const  NotValidatedExamByDep=({searchParams}:{searchParams?:{[key:string]:string}})=> {
+  const { page, ...queryParams } = searchParams || {};
+  const currentPage = page ? parseInt(page) : 1
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
   const {auth}=useAuth()
+  const totalExams = JSON.parse(sessionStorage.getItem('notValidatedExams') || '0')
+
+
 
   useEffect(() => {
     const controller = new AbortController();
 
     const getExams = async () => {
         try {
-            const response = await axiosPrivate.get('/exams/notValidatedExamsByDeaprtment/'+auth.user_id, {
+            const response = await axiosPrivate.get('/exams/notValidatedExamsByDeaprtment/'+auth.user_id+'/'+currentPage, {
                 signal: controller.signal
             });
             console.log(response.data);
@@ -106,18 +103,18 @@ const  NotValidatedExamByDep=()=> {
         <Table columns={columns} renderRow={renderRow} data={exams} />
 
         {/* PAGINATION */}
-        {/* <Pagination
+        { exams.length>0 && <Pagination
             currentPage={currentPage}
             count ={totalExams}
-        /> */}
+        />}
       </div>
 
 
       {/* BUTTON TEXT */}
-      <div className="text-center text-sm text-gray-700 mt-6">
+      {exams.length>0 && <div className="text-center text-sm text-gray-700 mt-6">
         <p>Après la vérification des plannings concernant votre département, vous devrez cliquer sur le bouton <strong>Valider</strong>.</p>
         <p>* Cette action est irréversible *</p>
-      </div>
+      </div>}
 
       {/* BUTTON */}
       <div className="w-full mt-8 mb-4">

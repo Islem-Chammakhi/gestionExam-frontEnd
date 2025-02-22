@@ -7,7 +7,6 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { role, subjectsData } from "@/lib/data";
 import Image from "next/image";
 import RequireAuth from "@/utils/RequireAuth";
 import PersistLogin from '@/utils/PersistLogin';
@@ -71,7 +70,7 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
 
   useEffect(() => {
     const controller = new AbortController();
-
+  
     const getExams = async () => {
         try {
             const response = await axiosPrivate.get('/exams/getAllExams/'+currentPage, {
@@ -98,6 +97,19 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
     }
 }, [axiosPrivate, router])
 
+const __deleteExam=(id:number)=>{
+  const filteredExams = exams.filter((exam) => exam.exam_id !== id)
+  setExams(filteredExams)
+}
+const __addExam=(newExam:any)=>{
+  setExams((prevExams) => [...prevExams, newExam])
+}
+const __updateExam=(updatedExam:any)=>{
+  console.log("updated",updatedExam)
+  setExams((prevExams) =>
+    prevExams.map((exam) => ( exam.exam_id === updatedExam.exam_id ? { ...exam, exam_date: updatedExam.exam_date } : exam))
+  );
+}
 
 
   const renderRow = (item: any) => (
@@ -116,8 +128,8 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
       <td>{item?.rooms[0]?.FkRoom?.room_name || "-"}</td>
       <td>
         <div className="flex items-center gap-2">
-              <FormModal  type="update" data={item} />
-              <FormModal  type="delete" id={item.exam_id} />
+              <FormModal  table="exam" type="update" data={item} updateExam={__updateExam} />
+              <FormModal  table="exam"  type="delete" id={item.exam_id} deleteExam={__deleteExam} />
         </div>
       </td>
     </tr>
@@ -130,7 +142,7 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
         {/* TOP */}
         <div className="flex items-center justify-between">
           <h1 className="hidden md:block text-lg font-semibold">Examens</h1>
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto  mb-8">
             <TableSearch />
             <div className="flex items-center gap-4 self-end">
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
@@ -139,7 +151,7 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
                 <Image src="/sort.png" alt="" width={14} height={14} />
               </button>
-              <FormModal  type="create" />
+              <FormModal   table="exam" type="create" addExam={__addExam} />
             </div>
           </div>
         </div>

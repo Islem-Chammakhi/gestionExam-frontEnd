@@ -4,7 +4,6 @@ import { useState,useEffect } from 'react';
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { DepExamData } from "@/lib/data";
 import Image from "next/image";
 import UserCard from "@/components/UserCard";
 import useAxiosPrivate from '@/hooks/useAxiosPrivate';
@@ -26,16 +25,10 @@ const columns = [
   { header: "Status", accessor: "status"}
 ];
 
-const ITEMS_PER_PAGE = 10;
 
-export default function ChefPage() {
-  {/* lel pagination */}
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(DepExamData.length / ITEMS_PER_PAGE);
-  // Calculate the current page data
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentData = DepExamData.slice(startIndex, endIndex);
+export default function ChefPage({searchParams}:{searchParams?:{[key:string]:string}}) {
+  const { page, ...queryParams } = searchParams || {};
+  const currentPage = page ? parseInt(page) : 1
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
@@ -48,15 +41,11 @@ export default function ChefPage() {
 
     const getExams = async () => {
         try {
-            const response = await axiosPrivate.get('/exams/getExamsByDeaprtment/'+auth.user_id, {
-                signal: controller.signal
-            });
             const [response1, response2] = await Promise.all([
-              axiosPrivate.get("/exams/getExamsByDeaprtment/"+auth.user_id,{signal: controller.signal}), // Première API
+              axiosPrivate.get("/exams/getExamsByDeaprtment/"+auth.user_id+'/'+currentPage,{signal: controller.signal}), // Première API
               axiosPrivate.get("/supervisors/getCountsSummaryHead/"+auth.user_id,{signal: controller.signal}), // Deuxième API
             ]);
-            console.log(response.data);
-            if (response.status === 200) {
+            if (response1.status === 200) {
               setExams(response1.data);
               setCounts(response2.data);
               sessionStorage.setItem('totalExams', JSON.stringify(response2.data.validatedExams+response2.data.notValidatedExams)) 
@@ -107,14 +96,14 @@ export default function ChefPage() {
   
 
   return (
-    <div className="p-4 flex flex-col items-center w-full">
+    <div className="p-4 flex flex-col items-center w-full mb-8">
       {/* USER CARDS */}
       <div className="flex gap-4 justify-center flex-wrap w-full">
         <UserCard type="Département" count={counts?.dep?.name || ''} />
-        <UserCard type="Chef de département" count={counts?.HeadName?.FkUser?.name} />
-        <UserCard type="Enseignant" count={counts.totalSupervisors} />
-        <UserCard type="Examen" count={counts.validatedExams+counts.validatedExams} />
-        <UserCard type="Etudiant" count={counts.totalStudent} />
+        <UserCard type="Chef de département" count={counts?.HeadName?.FkUser?.name|| ''} />
+        <UserCard type="Enseignant" count={counts?.totalSupervisors || 0} />
+        <UserCard type="Examen" count={counts?.validatedExams+counts?.notValidatedExams || 0 } />
+        <UserCard type="Etudiant" count={counts?.totalStudent|| 0} />
       </div>
 
       {/* TABLE */}
@@ -139,7 +128,10 @@ export default function ChefPage() {
         <Table columns={columns} renderRow={renderRow} data={exams} />
 
         {/* PAGINATION */}
-        {/* <Pagination totalPages={totalPages} onPageChange={setCurrentPage} /> */}
+        {exams.length>0 && <Pagination
+                    currentPage={currentPage}
+                    count ={counts?.validatedExams+counts?.notValidatedExams}
+                />}
       </div>
       <div className ='mt-5'>
         <ExamsPieChart/>

@@ -5,7 +5,6 @@ import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 import { useRouter } from 'next/navigation';
 import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
-import ReservationModal from "@/components/ReservationModal";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { classesData, role } from "@/lib/data";
@@ -102,8 +101,8 @@ const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => 
         <div className="flex items-center gap-2">
           {role === "admin" && (
             <>
-              <ReservationModal table="class" type="reserve" />
-              <ReservationModal table="class" type="view" />
+              <FormModal table="salle" type="reserve" />
+              <FormModal table="salle" type="view" />
             </>
           )}
         </div>
@@ -120,7 +119,7 @@ const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => 
           {/* TOP */}
           <div className="flex items-center justify-between">
             <h1 className="hidden md:block text-lg font-semibold">Salles</h1>
-            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto  mb-8">
               <TableSearch />
               <div className="flex items-center gap-4 self-end">
                 <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">

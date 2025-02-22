@@ -26,27 +26,22 @@ const columns = [
   { header: "Surveillant", accessor: "surveillant" },
 ];
 
-const ITEMS_PER_PAGE = 10;
 
-export default function ValidExams() {
-  {/* lel pagination */}
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(chefData.length / ITEMS_PER_PAGE);
-  // Calculate the current page data
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentData = chefData.slice(startIndex, endIndex);
+export default function ValidExams0({searchParams}:{searchParams?:{[key:string]:string}}) {
+  const { page, ...queryParams } = searchParams || {};
+  const currentPage = page ? parseInt(page) : 1
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
   const {auth}=useAuth()
+  const totalExams = JSON.parse(sessionStorage.getItem('validatedExams') || '0')
 
     useEffect(() => {
       const controller = new AbortController();
   
       const getExams = async () => {
           try {
-              const response = await axiosPrivate.get('/exams/validatedExamsByDeaprtment/'+auth.user_id, {
+              const response = await axiosPrivate.get('/exams/validatedExamsByDeaprtment/'+auth.user_id+'/'+currentPage, {
                   signal: controller.signal
               });
               console.log("data fetched",response.data);
@@ -108,7 +103,10 @@ export default function ValidExams() {
         <Table columns={columns} renderRow={renderRow} data={exams} />
 
         {/* PAGINATION */}
-        {/* <Pagination totalPages={totalPages} onPageChange={setCurrentPage} /> */}
+        { exams.length>0 && <Pagination
+            currentPage={currentPage}
+            count ={totalExams}
+        />}
       </div>
 
 

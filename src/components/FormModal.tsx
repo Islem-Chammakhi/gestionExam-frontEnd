@@ -1,111 +1,133 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import useAxiosPrivate from "@/hooks/useAxiosPrivate";
 import Image from "next/image";
-import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 import { useState } from "react";
+import ExamForm from "./forms/ExamForm";
+import RoomReservationForm from "./forms/RoomReservationForm";
+import SurveillantForm from "./forms/SurveillantForm";
 
-// Lazy loading
-const ExamForm = dynamic(() => import("./forms/ExamForm"), {
-  loading: () => <h1>Loading...</h1>,
-});
+// Define all possible types for all forms
+type FormType = "create" | "update" | "delete" | "reserve" | "view" | "assign";
 
+// Define the forms object
 const forms: {
-  [key: string]: (type: "create" | "update", data?: any) => JSX.Element;
+  [key: string]: (type: FormType, data?: any, id?: number ,addExam?: (newExam: any) => void,updateExam?: (updatedExam: any) => void) => JSX.Element;
 } = {
-  exam: (type, data) => <ExamForm type={type} data={data} />,
+  exam: (type, data, id,addExam,updateExam) => {
+    if (type === "create" || type === "update") {
+      return <ExamForm type={type} data={data} id={id} addExam={addExam} updateExam={updateExam} />;
+    }
+    return <span className="text-red-500">Invalid type for ExamForm!</span>;
+  },
+
+  salle: (type, data, id) => {
+    if (type === "reserve" || type === "view") {
+      return <RoomReservationForm type={type} data={data} id={id} />;
+    }
+    return <span className="text-red-500">Invalid type for RoomReservationForm!</span>;
+  },
+
+  surveillant: (type, data, id) => {
+    if (type === "assign" || type === "view") {
+      return <SurveillantForm type={type} data={data} id={id} />;
+    }
+    return <span className="text-red-500">Invalid type for SurveillantForm!</span>;
+  },
 };
 
-const FormModal = ({
-  type,
-  data,
-  id,
-}: {
-
-  type: "create" | "update" | "delete";
+const FormModal = ({ table, type, data, id,deleteExam,addExam,updateExam}: {
+  table: "exam" | "salle" | "surveillant";
+  type: FormType;
   data?: any;
   id?: number;
+  deleteExam ? :(id: number) => void;
+  addExam ? :(newExam:any) => void;
+  updateExam ? :(updatedExam:any) => void
 }) => {
   const size = "w-8 h-8";
-  const bgColor =
-    type === "create"
-      ? "bg-lamaYellow"
-      : type === "update"
-      ? "bg-purple-300"
-      : "bg-red-400";
-
-  const [open, setOpen] = useState(false);
+  const bgColor = type === "create" ? "bg-lamaYellow" :
+    type === "update" ? "bg-purple-300" :
+    type === "delete" ? "bg-red-400" :
+    type === "reserve" ? "bg-blue-200" :
+    type === "view" ? "bg-green-200" :
+    type === "assign" ? "bg-orange-200" : "";
   const axiosPrivate = useAxiosPrivate();
-  console.log("wiiiiiiiiiiiiiiiiiiiw",data)
-  const handleDelete=async (e: React.FormEvent)=>{
-    e.preventDefault()
+  const [open, setOpen] = useState(false);
+  const handleDeleteExam =async ()=>{
     const controller = new AbortController();
     try {
       const response = await axiosPrivate.delete('/exams/deleteExam/'+id, {
           signal: controller.signal
       });
-      console.log(response.data);
       if (response.status === 201) {
-        console.log("examen supprimé")
+        id && deleteExam?.(id)
       }
       
   } catch (err: any) {
     console.log(err);
     if (err.name !== "CanceledError") {
-      console.error("Erreur lors de la supression de  l'examen:", err);
+      console.error("Erreur lors de la récupération des examens:", err);        
+      alert("❌ Erreur lors de la suppression de l'examen : " + (err.response?.data?.message || err.message));
   }
-
-
+    }
   }
-}
-
   const Form = () => {
+    // DELETE LOGIC
     if (type === "delete" && id) {
       return (
-        <form onSubmit={handleDelete} className="p-2 flex flex-col gap-4">
+        <form  className="flex flex-col gap-4 p-3" onSubmit={(e) => {e.preventDefault();
+          handleDeleteExam ();
+        }}>
+          <h1 className="text-xl font-semibold text-center">Supprimer examen</h1>
           <span className="text-center font-medium">
-            All data will be lost. Are you sure you want to delete this exam ?
+            Toutes les données seront perdues. Êtes-vous sûr?
           </span>
-          <button className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center">
-            Delete
+          <button className="bg-red-700 text-white mt-2 py-2 px-20 rounded-md border-none w-max self-center">
+            Supprimer
           </button>
         </form>
       );
-    } else if ((type === "create")) {
-        return <ExamForm type="create"/>
     }
-    else if ((type === "update")) {
-      return <ExamForm type="update" data={data}/>
+
+    // Render the appropriate form based on the table and type
+    if (forms[table]) {
+      return forms[table](type, data, id,addExam,updateExam);
     }
-     else {
-      return <span className="text-red-500">Form not found!</span>;
-    }
+
+    // If no form is found
+    return <span className="text-red-500">Form not found!</span>;
   };
 
   return (
     <>
       <div className="relative group">
-        <button
-          className={`${size} flex items-center justify-center rounded-full ${bgColor}`}
-          onClick={() => setOpen(true)}
-        >
-          <Image src={`/${type}.png`} alt={type} width={18} height={18} />
+        {/* Button/icon */}
+        <button className={`${size} flex items-center justify-center rounded-full ${bgColor}`} onClick={() => setOpen(true)}>
+          <Image src={`/${type}.png`} alt="{type}" width={18} height={18} />
         </button>
 
         {/* Tooltip */}
         <span className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-          {type === "update" ? "Modifier" : type === "delete" ? "Supprimer" : ""}
+          {type === "update" ? "Modifier" :
+          type === "delete" ? "Supprimer" :
+          type === "create" ? "Créer" :
+          type === "reserve" ? "Réserver" :
+          type === "view" ? "Consulter" :
+          type === "assign" ? "Assigner" : ""}
         </span>
       </div>
 
+      {/* Modal */}
       {open && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-md relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%]">
+          {/* Conditional width based on type */}
+          <div className={`bg-white p-4 rounded-md relative ${
+            type === "view" ? "w-[80%] lg:w-[70%] xl:w-[60%]" : "w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%]"
+          }`}>
             <Form />
-            <div
-              className="absolute top-4 right-4 cursor-pointer"
-              onClick={() => setOpen(false)}
-            >
+            {/* Close button */}
+            <div className="absolute top-4 right-4 cursor-pointer" onClick={() => setOpen(false)}>
               <Image src="/close.png" alt="Close" width={14} height={14} />
             </div>
           </div>

@@ -1,245 +1,189 @@
 "use client";
 
-import { useState } from "react";
-import { subjectsData } from "../../lib/data"; // Import your data
-import FormModal from "@/components/FormModal"; // Import FormModal if needed
-import { role } from "@/lib/data"; // Import role if needed
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import Table from "../Table";
 
-type Exam = {
-  exam_id: number;
-  subject: string;
-  department_id: number;
-  exam_date: string;
-  start_time: string;
-  end_time: string;
-  coefficient: number;
-  duration: string;
-  salle: string;
-  surveillant1id: number;
-  surveillant2id: number;
-};
 
-const columns = [
-  {
-    header: "Exam ID",
-    accessor: "exam_id",
-  },
-  {
-    header: "Subject",
-    accessor: "subject",
-  },
-  {
-    header: "Dep. ID",
-    accessor: "department_id",
-  },
-  {
-    header: "Date",
-    accessor: "exam_date",
-  },
-  {
-    header: "Start Time",
-    accessor: "start_time",
-  },
-  {
-    header: "End Time",
-    accessor: "end_time",
-  },
-  {
-    header: "Duration",
-    accessor: "duration",
-  },
-  {
-    header: "Coefficient",
-    accessor: "coefficient",
-  },
-  {
-    header: "Salle",
-    accessor: "salle",
-  },
-  {
-    header: "Actions",
-    accessor: "action",
-  },
-];
 
-interface SurveillantFormProps {
-  mode: "assign" | "view";
-  surveillantId?: number; // Add surveillantId as an optional prop
-}
+const schema = z.object({
+  examen: z.string().min(1, { message: "Examen est requis!" }),
+  salle: z.string(),
+  date: z.string(),
+  duration: z.string(), 
+  debut: z.string(),
+  fin: z.string(),
+});
 
-const SurveillantForm = ({ mode, surveillantId }: SurveillantFormProps) => {
-  const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
+type Inputs = z.infer<typeof schema>;
 
-  const filteredExams = subjectsData.filter((exam) =>
-    exam.subject.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
-  // Filter exams for the specific surveillant in view mode
-  const assignedExams = subjectsData.filter(
-    (exam) =>
-      surveillantId &&
-      (exam.surveillant1id === surveillantId || exam.surveillant2id === surveillantId)
-  );
+const SurveillantForm = ({type,data,id}: {
+  type: "assign" | "view";
+  data?: any;
+  id?: number;
+}) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<Inputs>({
+    resolver: zodResolver(schema),
+  });
 
-  const handleExamSelect = (exam: Exam) => {
-    setSelectedExam(exam);
-    setSearchTerm(exam.subject);
-    setShowDropdown(false);
-  };
+  const onSubmit = handleSubmit((data) => {
+    console.log(data);
+  });
 
-  const renderRow = (item: Exam) => (
-    <tr
-      key={item.exam_id}
-      className="border-2 border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
-    >
-      <td className="p-5 text-center">{item.exam_id}</td>
-      <td className="text-center">{item.subject}</td>
-      <td className="text-center">{item.department_id}</td>
-      <td className="text-center">{item.exam_date}</td>
-      <td className="text-center">{item.start_time}</td>
-      <td className="text-center">{item.end_time}</td>
-      <td className="text-center">{item.duration}</td>
-      <td className="text-center">{item.coefficient}</td>
-      <td className="text-center">{item.salle}</td>
-      <td className="text-center">
-        <div className="flex items-center justify-center gap-2">
-          {role === "admin" && (
-            <>
-              <FormModal table="exam" type="delete" id={item.exam_id} />
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-
-  if (mode === "view") {
-    return (
-      <div className="bg-white p-2 rounded-md flex-1 m-4 mt-0 w-full max-w-screen-2xl mx-auto">
-        <h2 className="text-2xl font-semibold text-center mb-4">
-          Liste de surveillance des examens
-        </h2>
-        <br />
-        <div className="overflow-x-auto max-h-96">
-          {assignedExams.length === 0 ? (
-            <p className="text-center p-4">Aucun examen assigné</p>
-          ) : (
-            <table className="w-full border border-gray-300 rounded-lg">
-              <thead>
-                <tr>
-                  {columns.map((col) => (
-                    <th
-                      key={col.accessor}
-                      className="p-3 font-semibold text-center"
-                    >
-                      {col.header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {assignedExams.map((item) => renderRow(item))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-    );
-  }
+  
+  // Define columns for the table
+  const columns = [
+    { header: "Examen", accessor: "examen", className: "text-center" },
+    { header: "Salle", accessor: "salle", className: "text-center" },
+    { header: "Date", accessor: "date", className: "text-center" },
+    { header: "Durée", accessor: "duration", className: "text-center" },
+    { header: "Début", accessor: "debut", className: "text-center" },
+    { header: "Fin", accessor: "fin", className: "text-center" },
+  ];
+  
 
   return (
-    <div className="space-y-4 w-full max-w-screen-md mx-auto">
-      {/* Exam Dropdown */}
-      <div className="flex flex-col gap-2 w-full relative">
-        <label className="font-medium text-sm text-gray-700">Exam</label>
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setShowDropdown(true);
-          }}
-          onFocus={() => setShowDropdown(true)}
-          className="p-2 border rounded-md"
-          placeholder="Search for an exam..."
-          autoComplete="off"
-        />
-        {showDropdown && filteredExams.length > 0 && (
-          <ul className="absolute z-10 left-0 top-full mt-1 w-full bg-white border rounded-md shadow-md max-h-40 overflow-y-auto">
-            {filteredExams.map((exam) => (
-              <li
-                key={exam.exam_id}
-                className="p-2 hover:bg-gray-200 cursor-pointer"
-                onClick={() => handleExamSelect(exam)}
-              >
-                {exam.subject}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+    <>
 
-      {/* Locked Fields */}
-      {selectedExam && (
-        <>
-          <div className="flex flex-col gap-2">
-            <label className="font-medium text-sm text-gray-900">Salle</label>
-            <input
-              type="text"
-              value={selectedExam.salle}
-              readOnly
-              className="p-2 border rounded-md bg-gray-100"
-            />
+
+      {/* ASSIGN FORM */}
+      {type === "assign" && (
+          <form className="flex flex-col gap-8 p-3" onSubmit={onSubmit}>
+          {/* TITRE */}
+          <h1 className="text-lg font-semibold text-center">Assigner un surveillant</h1>
+        
+          {/* CONTENU */}
+          <div className="flex justify-between flex-wrap gap-4">
+            <div className="flex gap-4 w-full">
+              {/* Matière Field (Dropdown list) */}
+              <div className="flex flex-col gap-2 w-3/4">
+                <label className="text-xs text-gray-500">Examen</label>
+                <select
+                  {...register("examen")}
+                  className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+                >
+                  <option value="">Sélectionnez un examen</option>
+                  {/* Backend engineer (Lbaby) will populate options here */}
+                </select>
+                {errors.examen && (
+                  <span className="text-red-500 text-xs">{errors.examen.message}</span>
+                )}
+              </div>
+        
+              {/* Coefficient Field */}
+              <div className="flex flex-col gap-2 w-1/4">
+                <label className="text-xs text-gray-500">Coefficient</label>
+                <input
+                  type="number"
+                  className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                  readOnly
+                />
+              </div>
+            </div>
+
+            {/* Salle Field (Locked) */}
+            <div className="flex flex-col gap-2 w-full">
+              <label className="text-xs text-gray-500">Salle</label>
+              <input
+                {...register("salle")}
+                type="text"
+                className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                readOnly
+              />
+            </div>
+        
+            {/* Date Field (Locked, type: date) */}
+            <div className="flex flex-col gap-2 w-full">
+              <label className="text-xs text-gray-500">Date</label>
+              <input
+                {...register("date")}
+                type="date"
+                className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                readOnly
+              />
+            </div>
+        
+            {/* Durée Field (Locked) */}
+            <div className="flex flex-col gap-2 w-full">
+              <label className="text-xs text-gray-500">Durée</label>
+              <input
+                {...register("duration")}
+                type="text"
+                className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                readOnly
+              />
+            </div>
+        
+            <div className="flex gap-4 w-full">
+
+              {/* Debut Field (Locked, type: time) */}
+              <div className="flex flex-col gap-2 w-1/2">
+                <label className="text-xs text-gray-500">Début</label>
+                <input
+                  {...register("debut")}
+                  type="time"
+                  className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                  readOnly
+                />
+              </div>
+
+
+              {/* Fin Field (Locked, type: time) */}
+              <div className="flex flex-col gap-2 w-1/2">
+                <label className="text-xs text-gray-500">Fin</label>
+                <input
+                  {...register("fin")}
+                  type="time"
+                  className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
+                  readOnly
+                />
+              </div>
+
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="font-medium text-sm text-gray-900">Date</label>
-            <input
-              type="text"
-              value={selectedExam.exam_date}
-              readOnly
-              className="p-2 border rounded-md bg-gray-100"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="font-medium text-sm text-gray-900">Start Time</label>
-            <input
-              type="text"
-              value={selectedExam.start_time}
-              readOnly
-              className="p-2 border rounded-md bg-gray-100"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="font-medium text-sm text-gray-900">End Time</label>
-            <input
-              type="text"
-              value={selectedExam.end_time}
-              readOnly
-              className="p-2 border rounded-md bg-gray-100"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="font-medium text-sm text-gray-900">Duration</label>
-            <input
-              type="text"
-              value={selectedExam.duration}
-              readOnly
-              className="p-2 border rounded-md bg-gray-100"
-            />
-          </div>
-        </>
+        
+          {/* BUTTON RESERVER */}
+          <button className="bg-blue-500 text-white text-base p-2 rounded-md hover:bg-blue-400 transition-colors">
+            Assigner
+          </button>
+        </form>
       )}
 
-      {/* Assign Button */}
-      <button
-        className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        disabled={!selectedExam}
-      >
-        Assigner surveillant
-      </button>
-    </div>
+      {/* VIEW FORM */}
+      {type === "view" && (
+         <div className="flex flex-col gap-4 mt-3">
+            {/* TITRE */}
+            <h1 className="text-lg font-semibold text-center">Liste de surveillance d'enseignant</h1>
+        
+            {/* CONTENU */}
+            <div className="overflow-y-auto max-h-[400px]">
+            <Table
+              columns={columns}
+              data={data}
+              renderRow={(item) => (
+                <tr key={item.examen} className="border-b border-gray-200 odd:bg-slate-50 text-sm hover:bg-lamaPurpleLight text-center">
+                  <td className="p-4">{item.examen}</td>
+                  <td className="p-4">{item.salle}</td>
+                  <td className="p-4">{item.date}</td>
+                  <td className="p-4">{item.duration}</td>
+                  <td className="p-4">{item.debut}</td>
+                  <td className="p-4">{item.fin}</td>
+                </tr>
+              )}
+            />
+          </div>
+
+         </div>
+          
+      )} 
+
+    </>
   );
 };
 
