@@ -12,7 +12,7 @@ import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 
 
 const AdminPage = () => {
-  const [counts, setCounts] = useState({ totalSupervisors: 0, totalStudent: 0, totalSubjects: 0, totalExams: 0, examByDep: [], availableRooms: 0, notAvailableRooms: 0, totalRooms: 0 });
+  const [counts, setCounts] = useState({ totalSupervisors: 0, totalStudent: 0, totalSubjects: 0, totalExams: 0, examByDep: [], availableRooms: 0, notAvailableRooms: 0, totalRooms: 0 ,logs: []});
   const axiosPrivate=useAxiosPrivate()
   useEffect(() => {
     const controller = new AbortController();
@@ -76,7 +76,7 @@ const AdminPage = () => {
       {/* RIGHT */}
       <div className="w-full lg:w-1/3 flex flex-col gap-8">
         <EventCalendar />
-        <Announcements/>
+        <Announcements data={counts.logs}/>
       </div>
     </div>
   );

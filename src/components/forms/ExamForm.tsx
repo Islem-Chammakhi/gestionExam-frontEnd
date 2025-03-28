@@ -8,6 +8,9 @@ import useAxiosPrivate from "@/hooks/useAxiosPrivate";
 import { useState,useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import { CoefficientKey,coefTable,durationTable,DurationKey} from '@/lib/data';
+import { toast } from "react-toastify";
+import useAuth from "@/hooks/useAuth";
+
 
 // Schéma pour la création
 const createSchema = z.object({
@@ -28,15 +31,17 @@ interface Subject {
   name: string,
   coefficient: string,
   subject_id:number,
-  department_id:number
+  department_id:number,
+  filiere_name:string
 }
 
-const ExamForm = ({type,data,id,addExam,updateExam}: {
+const ExamForm = ({type,data,id,addExam,updateExam,handleClose}: {
   type: "create" | "update";
   data?: any;
   id?: number;
   addExam ? :(id: number) => void;
   updateExam?: (updatedExam: any)=>void
+  handleClose : ()=>void
 }) => {
   const {
     register,
@@ -49,57 +54,56 @@ const ExamForm = ({type,data,id,addExam,updateExam}: {
   const [selectedCoefficient, setSelectedCoefficient] = useState<number | null>(null)
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
+  const {auth} = useAuth()
+
+  
+  const getSubjects= async (controller:AbortController) => {
+      try {
+          const response = await axiosPrivate.get('/subjects/getAllSubjects', {
+              signal: controller.signal
+          });
+          console.log(response.data);
+          if (response.status === 200) {
+            setSubjects(response.data); 
+          }   
+      } catch (err: any) {
+        console.log(err);
+        if (err.name !== "CanceledError") {
+          console.error("Erreur lors de la récupération des matiéres:", err);
+          router.push('/sign-in');
+      }
+        }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
-  
-    const getSubjects= async () => {
-        try {
-            const response = await axiosPrivate.get('/subjects/getAllSubjects', {
-                signal: controller.signal
-            });
-            console.log(response.data);
-            if (response.status === 200) {
-              setSubjects(response.data); 
-            }   
-        } catch (err: any) {
-          console.log(err);
-          if (err.name !== "CanceledError") {
-            console.error("Erreur lors de la récupération des matiéres:", err);
-            router.push('/sign-in');
-        }
-          }
+    if(type === "create"){
+      getSubjects(controller);
     }
-
-    if (subjects.length === 0) {
-      getSubjects();
-    }
-    
-    console.log(subjects,"wiiiiiiiiiiiiiiw")
 
     return () => {
         controller.abort();
     }
-}, [axiosPrivate, router])
+}, [axiosPrivate, router,type])
 
 const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-  const selectedSubject = subjects.find(subject => subject.name === event.target.value);
+  const selectedSubject = subjects.find(subject => subject.subject_id === Number(event.target.value));
   setSelectedCoefficient(selectedSubject ? coefTable[selectedSubject.coefficient  as CoefficientKey] : null);
 };
 
   const __addExam = handleSubmit(async (formData) => {
-    const data = formData as CreateInputs
-    const selectedSubject = subjects.find(subject => subject.name === data.examen);
-
     // Trouver la clé correspondant à la durée sélectionnée
-    const selectedDurationKey = (Object.keys(durationTable) as DurationKey[]).find(key => durationTable[key] === Number(data.duration));
+    const selectedDurationKey = (Object.keys(durationTable) as DurationKey[]).find(key => durationTable[key] === Number((formData as CreateInputs).duration));
     const controller = new AbortController();
+
+
     try {
       const response = await axiosPrivate.post('/exams/createExam/', 
       {
-        subject_id: selectedSubject?.subject_id,
+        subject_id: (formData as CreateInputs).examen,
         duration: selectedDurationKey,
-        exam_date: data.date,
+        exam_date:  (formData as CreateInputs).date,
+        email: auth.email,
       },
       {
         signal: controller.signal,
@@ -108,7 +112,6 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     
       console.log(response.data);
       if (response.status === 201) {
-        console.log("<t5azwa9na",response.data)
         const newExam = await axiosPrivate.get('/exams/getExamById/'+response.data.exam_id, {
           signal: controller.signal
       });
@@ -117,13 +120,15 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setSubjects(response.data); 
       }   
         addExam && addExam(newExam.data)
+        handleClose()
+        toast.success("Examen ajouté avec succès");
       }
       
   } catch (err: any) {
     console.log(err);
     if (err.name !== "CanceledError") {
       console.error("Erreur lors de la récupération des examens:", err);        
-      alert("❌ Erreur lors de l'ajout' de l'examen : " + (err.response?.data?.message || err.message));
+      toast.error("❌ Erreur lors de l'ajout' de l'examen");
   }
   }});
 
@@ -141,14 +146,23 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
       }
     );
       if (response.status === 201) {
-        console.log(":) t5azwa9na",response.data)}
+        toast("Examen modifié avec succès");
+        console.log(response.data);
         updateExam && updateExam(response.data)
+        handleClose()
+      }
 
     } catch (err: any) {
       console.log(err);
       if (err.name !== "CanceledError") {
-      console.error("Erreur lors de la mise à jour de l'examen:", err);        
-      alert("❌ Erreur lors de la mise à jour de l'examen: " + (err.response?.data?.message || err.message));}
+        if(err.response?.status === 409){
+          toast.error(err.response.data.error)
+        }
+        else{
+          console.error("Erreur lors de la mise à jour de l'examen:", err);        
+          toast.error("❌ Erreur lors de la mise à jour de l'examen: ");}
+        }
+
       }
   });
 
@@ -177,8 +191,8 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
                   <option value="">Sélectionnez un examen</option>
                   {
                     subjects && subjects.map((matiere) => (
-                      <option key={matiere.subject_id} value={matiere.name}>
-                        {matiere.name}
+                      <option key={matiere.subject_id} value={matiere.subject_id}>
+                        {matiere.name+" : "+matiere.filiere_name}
                       </option>
                     ))
                   }
@@ -254,7 +268,7 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
                   type="text"
                   className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
                   readOnly
-                  value={data && data.FkSubject.name}
+                  value={data && data.subject.name}
                 />
               </div>
 
@@ -265,7 +279,7 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
                   type="number"
                   className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full bg-gray-100 cursor-not-allowed"
                   readOnly
-                  value={data && coefTable[data.FkSubject.coefficient as CoefficientKey]}
+                  value={data && coefTable[data.subject.coefficient as CoefficientKey]}
                 />
               </div>
             </div>

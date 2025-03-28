@@ -18,15 +18,16 @@ const CountChart = ( {availableRooms, notAvailableRooms} : { availableRooms: num
       fill: "white",
     },
     {
-      name: "Salles disponibles",
-      count: availableRooms,
-      fill: "#FAE27C",
-    },
-    {
       name: "Salles non disponibles",
       count: notAvailableRooms,
       fill: "#C3EBFA",
     },
+    {
+      name: "Salles disponibles",
+      count: availableRooms,
+      fill: "#FAE27C",
+    },
+
   ];
   const availableRoomsPercentage=(availableRooms/total) *100
   const notAvailableRoomsPercentage=(notAvailableRooms/total) *100

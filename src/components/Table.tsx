@@ -9,7 +9,7 @@ const Table = ({
 }) => {
   return (
      data && data.length !==0 ?
-      <table className="w-full  mb-3">
+      <table className="w-full  mb-3 mt-6">
         <thead>
           <tr className="text-left text-gray-900 text-sm">
             {columns.map((col) => (

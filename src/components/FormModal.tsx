@@ -6,33 +6,34 @@ import { useState } from "react";
 import ExamForm from "./forms/ExamForm";
 import RoomReservationForm from "./forms/RoomReservationForm";
 import SurveillantForm from "./forms/SurveillantForm";
+import { toast } from "react-toastify";
 
 // Define all possible types for all forms
 type FormType = "create" | "update" | "delete" | "reserve" | "view" | "assign";
 
 // Define the forms object
 const forms: {
-  [key: string]: (type: FormType, data?: any, id?: number ,addExam?: (newExam: any) => void,updateExam?: (updatedExam: any) => void) => JSX.Element;
+  [key: string]: (type: FormType, handleClose: () => void,data?: any, id?: number ,addExam?: (newExam: any) => void,updateExam?: (updatedExam: any) => void) => JSX.Element;
 } = {
-  exam: (type, data, id,addExam,updateExam) => {
+  exam: (type,handleClose, data, id,addExam,updateExam,) => {
     if (type === "create" || type === "update") {
-      return <ExamForm type={type} data={data} id={id} addExam={addExam} updateExam={updateExam} />;
+      return <ExamForm type={type} handleClose={handleClose} data={data} id={id}  addExam={addExam} updateExam={updateExam} />;
     }
-    return <span className="text-red-500">Invalid type for ExamForm!</span>;
+    return <span className="text-red-500">Type invalide pour ExamForm !</span>;
   },
 
-  salle: (type, data, id) => {
+  salle: (type,handleClose, data, id) => {
     if (type === "reserve" || type === "view") {
-      return <RoomReservationForm type={type} data={data} id={id} />;
+      return <RoomReservationForm type={type} handleClose={handleClose} data={data} id={id} />;
     }
-    return <span className="text-red-500">Invalid type for RoomReservationForm!</span>;
+    return <span className="text-red-500">Type invalide pour RoomReservationForm !</span>;
   },
 
-  surveillant: (type, data, id) => {
+  surveillant: (type,handleClose, data, id) => {
     if (type === "assign" || type === "view") {
-      return <SurveillantForm type={type} data={data} id={id} />;
+      return <SurveillantForm type={type} handleClose={handleClose} data={data} id={id} />;
     }
-    return <span className="text-red-500">Invalid type for SurveillantForm!</span>;
+    return <span className="text-red-500">Type invalide pour SurveillantForm!</span>;
   },
 };
 
@@ -54,6 +55,11 @@ const FormModal = ({ table, type, data, id,deleteExam,addExam,updateExam}: {
     type === "assign" ? "bg-orange-200" : "";
   const axiosPrivate = useAxiosPrivate();
   const [open, setOpen] = useState(false);
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   const handleDeleteExam =async ()=>{
     const controller = new AbortController();
     try {
@@ -62,13 +68,14 @@ const FormModal = ({ table, type, data, id,deleteExam,addExam,updateExam}: {
       });
       if (response.status === 201) {
         id && deleteExam?.(id)
+        toast.success("la suppression a été effectuée avec succès");
       }
       
   } catch (err: any) {
     console.log(err);
     if (err.name !== "CanceledError") {
       console.error("Erreur lors de la récupération des examens:", err);        
-      alert("❌ Erreur lors de la suppression de l'examen : " + (err.response?.data?.message || err.message));
+      toast.error("Erreur lors de la suppression de l'examen : ");
   }
     }
   }
@@ -92,7 +99,7 @@ const FormModal = ({ table, type, data, id,deleteExam,addExam,updateExam}: {
 
     // Render the appropriate form based on the table and type
     if (forms[table]) {
-      return forms[table](type, data, id,addExam,updateExam);
+      return forms[table](type,handleClose, data, id,addExam,updateExam);
     }
 
     // If no form is found

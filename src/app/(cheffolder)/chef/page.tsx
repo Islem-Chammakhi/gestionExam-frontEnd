@@ -11,10 +11,12 @@ import { useRouter } from 'next/navigation';
 import useAuth from '@/hooks/useAuth';
 import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
 import ExamsPieChart from '@/components/ExamsPieChart';
+import { search } from '@/lib/data';
 
 const columns = [
   { header: "Exam ID", accessor: "exam_id" },
   { header: "Matiere", accessor: "subject" },
+  { header: "Filière",accessor: "filiere_name"},
   { header: "Date", accessor: "exam_date" },
   { header: "Start Time", accessor: "start_time" },
   { header: "End Time", accessor: "end_time" },
@@ -24,14 +26,27 @@ const columns = [
   { header: "Surveillant", accessor: "surveillant" },
   { header: "Status", accessor: "status"}
 ];
-
-
+const keys=[
+  "exam_id",
+  "start_time",
+  "end_time",
+  "teacher.user.name",
+  "exam.exam_date",
+  "exam.subject.name",
+  "exam.duration",
+  "exam.subject.coefficient",
+  "exam.subject.department_id",
+  "exam.subject.filiere_name",
+  "room.room_name",
+]
 export default function ChefPage({searchParams}:{searchParams?:{[key:string]:string}}) {
   const { page, ...queryParams } = searchParams || {};
   const currentPage = page ? parseInt(page) : 1
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
+  const [filteredExams, setFilteredExams] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const {auth} = useAuth();
   const [counts, setCounts] = useState<any>({});
   
@@ -71,17 +86,31 @@ export default function ChefPage({searchParams}:{searchParams?:{[key:string]:str
     }
 }, [axiosPrivate, router])
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredExams(exams);
+    } else {
+      const results = search(exams, searchQuery, keys);
+      setFilteredExams(results);
+    }
+  }, [searchQuery, exams]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
   const renderRow = (item: any) => (
     <tr key={item.exam_id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
       <td className="p-5">{item.exam_id}</td>
-      <td>{item.fKExam.FkSubject.name}</td>
-      <td>{item.fKExam.exam_date.slice(0,10)}</td>
+      <td>{item.exam.subject.name}</td>
+      <td>{item.exam.subject.filiere_name}</td>
+      <td>{item.exam.exam_date.slice(0,10)}</td>
       <td>{item.start_time.slice(11,16)}</td>
       <td>{item.end_time.slice(11,16)}</td>
-      <td>{durationTable[item.fKExam.duration as DurationKey]}h</td>
-      <td>{coefTable[item.fKExam.FkSubject.coefficient as CoefficientKey ]}</td>
-      <td>{item.FkRoom.room_name}</td>
-      <td>{item.FkTeacher.FkUser.name}</td>
+      <td>{durationTable[item.exam.duration as DurationKey]}h</td>
+      <td>{coefTable[item.exam.subject.coefficient as CoefficientKey ]}</td>
+      <td>{item.room.room_name}</td>
+      <td>{item.teacher.user.name}</td>
       <td className="text-center">
         <Image
           src={item.validated_by_hod === true  ? "/validated.png" : "/notvalidated.png"}
@@ -100,7 +129,7 @@ export default function ChefPage({searchParams}:{searchParams?:{[key:string]:str
       {/* USER CARDS */}
       <div className="flex gap-4 justify-center flex-wrap w-full">
         <UserCard type="Département" count={counts?.dep?.name || ''} />
-        <UserCard type="Chef de département" count={counts?.HeadName?.FkUser?.name|| ''} />
+        <UserCard type="Chef de département" count={counts?.HeadName?.user?.name|| ''} />
         <UserCard type="Enseignant" count={counts?.totalSupervisors || 0} />
         <UserCard type="Examen" count={counts?.validatedExams+counts?.notValidatedExams || 0 } />
         <UserCard type="Etudiant" count={counts?.totalStudent|| 0} />
@@ -112,7 +141,7 @@ export default function ChefPage({searchParams}:{searchParams?:{[key:string]:str
         <div className="flex items-center justify-between">
           <h1 className="hidden md:block text-lg font-semibold">Tous les examens du département:</h1>
           <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <TableSearch />
+            <TableSearch onSearch={handleSearch} />
             <div className="flex items-center gap-4 self-end">
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
                 <Image src="/filter.png" alt="Filter" width={14} height={14} />
@@ -125,7 +154,7 @@ export default function ChefPage({searchParams}:{searchParams?:{[key:string]:str
         </div>
 
         {/* LIST */}
-        <Table columns={columns} renderRow={renderRow} data={exams} />
+        <Table columns={columns} renderRow={renderRow} data={filteredExams} />
 
         {/* PAGINATION */}
         {exams.length>0 && <Pagination

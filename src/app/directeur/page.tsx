@@ -10,11 +10,13 @@ import DepartmentCard from '@/components/DepartmentCard';
 import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 import { useRouter } from 'next/navigation';
 import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
+import { search } from '@/lib/data';
 
 
 const columns = [
   { header: "Exam ID", accessor: "exam_id" },
   { header: "Matiere", accessor: "subject" },
+  { header: "Filière",accessor: "filiere_name"},
   { header: "Dep. ID", accessor: "department_id" },
   { header: "Date", accessor: "exam_date" },
   { header: "Start Time", accessor: "start_time" },
@@ -26,7 +28,19 @@ const columns = [
   { header: "Status", accessor: "status"}
 ];
 
-
+const keys=[
+  "exam_id",
+  "start_time",
+  "end_time",
+  "teacher.user.name",
+  "exam.exam_date",
+  "exam.subject.name",
+  "exam.duration",
+  "exam.subject.coefficient",
+  "exam.subject.department_id",
+  "exam.subject.filiere_name",
+  "room.room_name",
+]
 
 export default function DirecteurPage({searchParams}:{searchParams?:{[key:string]:string}}) {
   const axiosPrivate = useAxiosPrivate();
@@ -34,6 +48,8 @@ export default function DirecteurPage({searchParams}:{searchParams?:{[key:string
   const { page, ...queryParams } = searchParams || {};
   const currentPage = page ? parseInt(page) : 1
   const [exams, setExams] = useState<any[]>([]);
+  const [filteredExams, setFilteredExams] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [count, setCount] = useState<any>({})
   const [selectedDepartment, setSelectedDepartment] = useState<number>(0);
 
@@ -67,22 +83,39 @@ export default function DirecteurPage({searchParams}:{searchParams?:{[key:string
     }
 }, [axiosPrivate, router])
 
-const filteredExams = selectedDepartment>0
-  ? exams.filter((exam) => exam.fKExam.FkSubject.department_id === selectedDepartment)
+const filteredExamsByDepId =()=> selectedDepartment>0
+  ? exams.filter((exam) =>  exam.exam.subject.department_id === selectedDepartment)
   : exams;
+
+  useEffect(() => {
+    // if(selectedDepartment !==0){
+    //   setFilteredExams(filteredExamsByDepId())
+    // }
+    if (searchQuery.trim() === "") {
+      setFilteredExams(filteredExamsByDepId())
+    } else {
+      const results = search(filteredExamsByDepId(), searchQuery, keys);
+      setFilteredExams(results);
+    }
+  }, [searchQuery, exams,selectedDepartment]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
 
   const renderRow = (item: any) => (
     <tr key={item.exam_id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
       <td className="p-5">{item.exam_id}</td>
-      <td>{item.fKExam.FkSubject.name}</td>
-      <td>{item.fKExam.FkSubject.department_id}</td>
-      <td>{item.fKExam.exam_date.slice(0,10)}</td>
+      <td>{item.exam.subject.name}</td>
+      <td>{item.exam.subject.filiere_name}</td>
+      <td>{item.exam.subject.department_id}</td>
+      <td>{item.exam.exam_date.slice(0,10)}</td>
       <td>{item.start_time.slice(11,16)}</td>
       <td>{item.end_time.slice(11,16)}</td>
-      <td>{durationTable[item.fKExam.duration as DurationKey]}h</td>
-      <td>{coefTable[item.fKExam.FkSubject.coefficient as CoefficientKey ]}</td>
-      <td>{item.FkRoom.room_name}</td>
-      <td>{item.FkTeacher.FkUser.name}</td>
+      <td>{durationTable[item.exam.duration as DurationKey]}h</td>
+      <td>{coefTable[item.exam.subject.coefficient as CoefficientKey ]}</td>
+      <td>{item.room.room_name}</td>
+      <td>{item.teacher.user.name}</td>
       <td className="text-center">
         <Image
           src={item.validated_by_hod === true  ? "/validated.png" : "/notvalidated.png"}
@@ -114,7 +147,7 @@ const filteredExams = selectedDepartment>0
             Les examens de toutes les départements:
           </h1>
           <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <TableSearch />
+            <TableSearch onSearch={handleSearch} />
             <div className="flex items-center gap-4 self-end">
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
                 <Image src="/filter.png" alt="Filter" width={14} height={14} />

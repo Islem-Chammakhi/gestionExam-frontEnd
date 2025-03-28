@@ -4,7 +4,7 @@ import { useState,useEffect } from 'react';
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { chefData } from "@/lib/data";
+import {  search } from "@/lib/data";
 import Image from "next/image";
 import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,7 @@ import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
 const columns = [
   { header: "Exam ID", accessor: "exam_id" },
   { header: "Matiere", accessor: "subject" },
+  {header: "Filière",accessor: "filiere_name"},
   { header: "Date", accessor: "exam_date" },
   { header: "Start Time", accessor: "start_time" },
   { header: "End Time", accessor: "end_time" },
@@ -25,7 +26,19 @@ const columns = [
   { header: "Salle", accessor: "salle" },
   { header: "Surveillant", accessor: "surveillant" },
 ];
-
+const keys=[
+  "exam_id",
+  "start_time",
+  "end_time",
+  "teacher.user.name",
+  "exam.exam_date",
+  "exam.subject.name",
+  "exam.duration",
+  "exam.subject.coefficient",
+  "exam.subject.department_id",
+  "exam.subject.filiere_name",
+  "room.room_name",
+]
 
 export default function ValidExams0({searchParams}:{searchParams?:{[key:string]:string}}) {
   const { page, ...queryParams } = searchParams || {};
@@ -33,6 +46,8 @@ export default function ValidExams0({searchParams}:{searchParams?:{[key:string]:
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
+  const [filteredExams, setFilteredExams] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const {auth}=useAuth()
   const totalExams = JSON.parse(sessionStorage.getItem('validatedExams') || '0')
 
@@ -65,17 +80,31 @@ export default function ValidExams0({searchParams}:{searchParams?:{[key:string]:
       }
   }, [axiosPrivate, router])
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredExams(exams);
+    } else {
+      const results = search(exams, searchQuery, keys);
+      setFilteredExams(results);
+    }
+  }, [searchQuery, exams]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
   const renderRow = (item: any) => (
     <tr key={item.exam_id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
       <td className="p-5">{item.exam_id}</td>
-      <td>{item.fKExam.FkSubject.name}</td>
-      <td>{item.fKExam.exam_date.slice(0,10)}</td>
+      <td>{item.exam.subject.name}</td>
+      <td>{item.exam.subject.filiere_name}</td>
+      <td>{item.exam.exam_date.slice(0,10)}</td>
       <td>{item.start_time.slice(11,16)}</td>
       <td>{item.end_time.slice(11,16)}</td>
-      <td>{durationTable[item.fKExam.duration as DurationKey]}h</td>
-      <td>{coefTable[item.fKExam.FkSubject.coefficient as CoefficientKey ]}</td>
-      <td>{item.FkRoom.room_name}</td>
-      <td>{item.FkTeacher.FkUser.name}</td>
+      <td>{durationTable[item.exam.duration as DurationKey]}h</td>
+      <td>{coefTable[item.exam.subject.coefficient as CoefficientKey ]}</td>
+      <td>{item.room.room_name}</td>
+      <td>{item.teacher.user.name}</td>
     </tr>
   );
 
@@ -87,7 +116,7 @@ export default function ValidExams0({searchParams}:{searchParams?:{[key:string]:
         <div className="flex items-center justify-between">
           <h1 className="hidden md:block text-lg font-semibold">Examens validées du département:</h1>
           <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <TableSearch />
+            <TableSearch onSearch={handleSearch} />
             <div className="flex items-center gap-4 self-end">
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
                 <Image src="/filter.png" alt="Filter" width={14} height={14} />
@@ -100,7 +129,7 @@ export default function ValidExams0({searchParams}:{searchParams?:{[key:string]:
         </div>
 
         {/* LIST */}
-        <Table columns={columns} renderRow={renderRow} data={exams} />
+        <Table columns={columns} renderRow={renderRow} data={filteredExams} />
 
         {/* PAGINATION */}
         { exams.length>0 && <Pagination

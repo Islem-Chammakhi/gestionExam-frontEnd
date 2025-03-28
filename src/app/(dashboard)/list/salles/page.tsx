@@ -7,11 +7,10 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { classesData, role } from "@/lib/data";
 import Image from "next/image";
 import RequireAuth from "@/utils/RequireAuth";
 import PersistLogin from "@/utils/PersistLogin";
-
+import { search } from "@/lib/data";
 
 const columns = [
   {
@@ -42,7 +41,12 @@ const columns = [
     accessor: "action",
   },
 ];
-
+const keys= [
+  "room_id",
+  "room_name",
+  "location",
+  "capacity",
+];
 
 const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
   //récuperer la page courante :
@@ -53,7 +57,10 @@ const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => 
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [rooms, setRooms] = useState<any[]>([]);
+  const [filteredRooms, setFilteredRooms] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const totalRooms = JSON.parse(sessionStorage.getItem('totalRooms') || '0')
+
     useEffect(() => {
       const controller = new AbortController();
   
@@ -83,9 +90,18 @@ const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => 
       }
   }, [axiosPrivate, router,page])
 
-  
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredRooms(rooms);
+    } else {
+      const results = search(rooms, searchQuery,keys);
+      setFilteredRooms(results);
+    }
+  }, [searchQuery, rooms]);
 
-
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
 
   const renderRow = (item: any) => (
     <tr
@@ -99,16 +115,13 @@ const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => 
       <td className="hidden md:table-cell">{item.is_available === true ? "Disponible" : "Indisponible"}</td>
       <td>
         <div className="flex items-center gap-2">
-          {role === "admin" && (
-            <>
-              <FormModal table="salle" type="reserve" />
-              <FormModal table="salle" type="view" />
-            </>
-          )}
+              <FormModal table="salle" type="reserve" id={item.room_id}  />
+              <FormModal table="salle" type="view" data={item} id={item.room_id} />
         </div>
       </td>
     </tr>
   );
+
 
 
   return (
@@ -120,7 +133,7 @@ const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => 
           <div className="flex items-center justify-between">
             <h1 className="hidden md:block text-lg font-semibold">Salles</h1>
             <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto  mb-8">
-              <TableSearch />
+              <TableSearch onSearch={handleSearch} />
               <div className="flex items-center gap-4 self-end">
                 <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
                   <Image src="/filter.png" alt="" width={14} height={14} />
@@ -132,7 +145,7 @@ const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => 
             </div>
           </div>
           {/* LIST */}
-          <Table columns={columns} renderRow={renderRow} data={rooms} />
+          <Table columns={columns} renderRow={renderRow} data={filteredRooms} />
           {/* PAGINATION */}
           <Pagination
             currentPage={currentPage}

@@ -4,6 +4,7 @@ import "./globals.css";
 
 //import the authProvider
 import { AuthProvider } from "../context/authProvider";
+import { ToastContainer } from "react-toastify";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         {/* wrap the children with the authProvider juste bech les compoants yabda 3andhom accés lil globale state li hiya fil7ala mte3na token w role w email */}
         <AuthProvider>
+          <ToastContainer position="bottom-right" theme="dark"/>
           {children}
         </AuthProvider>
       </body>

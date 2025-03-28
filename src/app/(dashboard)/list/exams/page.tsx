@@ -11,7 +11,7 @@ import Image from "next/image";
 import RequireAuth from "@/utils/RequireAuth";
 import PersistLogin from '@/utils/PersistLogin';
 import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
-
+import { search } from '@/lib/data';
 
 
 const columns = [
@@ -26,6 +26,10 @@ const columns = [
   {
     header: "Dep. ID",
     accessor: "department_id",
+  },
+  {
+    header: "Filière",
+    accessor: "filiere_name",
   },
   {
     header: "Date",
@@ -57,13 +61,25 @@ const columns = [
   },
 ];
 
-
-
+const keys= [
+  "exam_id",
+  "duration",
+  "subject.name",
+  "subject.filiere_name",
+  "subject.coefficient",
+  "subject.department_id",
+  "exam_date",
+  "examroom.start_time",
+  "examroom.end_time",
+  "examroom.room.room_name",
+];
 
 const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
   const axiosPrivate = useAxiosPrivate();
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
+  const [filteredExams, setFilteredExams] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const { page, ...queryParams } = searchParams || {};
   const currentPage = page ? parseInt(page) : 1
   const totalExams = JSON.parse(sessionStorage.getItem('totalExams') || '0')
@@ -107,10 +123,22 @@ const __addExam=(newExam:any)=>{
 const __updateExam=(updatedExam:any)=>{
   console.log("updated",updatedExam)
   setExams((prevExams) =>
-    prevExams.map((exam) => ( exam.exam_id === updatedExam.exam_id ? { ...exam, exam_date: updatedExam.exam_date } : exam))
+    prevExams.map((exam) => ( exam.exam_id === updatedExam.exam_id ? { ...exam, exam_date : updatedExam.exam_date } : exam))
   );
 }
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredExams(exams);
+    } else {
+      const results = search(exams, searchQuery, keys);
+      setFilteredExams(results);
+    }
+  }, [searchQuery, exams]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
 
   const renderRow = (item: any) => (
     <tr
@@ -118,14 +146,15 @@ const __updateExam=(updatedExam:any)=>{
       className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
     >
       <td className="p-5">{item.exam_id}</td>
-      <td>{item.FkSubject.name}</td>
-      <td>{item.FkSubject.department_id}</td>
+      <td>{item.subject.name}</td>
+      <td>{item.subject.department_id}</td>
+      <td>{item.subject.filiere_name}</td>
       <td>{item.exam_date.slice(0,10)}</td>
-      <td>{item?.rooms[0]?.start_time.slice(11,16) || "-"}</td>
-      <td>{item?.rooms[0]?.end_time.slice(11,16) || "-"}</td>
+      <td>{item?.examroom?.start_time.slice(11,16) || "-"}</td>
+      <td>{item?.examroom?.end_time.slice(11,16) || "-"}</td>
       <td>{durationTable[item.duration as DurationKey]}h</td>
-      <td>{coefTable[item.FkSubject.coefficient as CoefficientKey]}</td>
-      <td>{item?.rooms[0]?.FkRoom?.room_name || "-"}</td>
+      <td>{coefTable[item.subject.coefficient as CoefficientKey]}</td>
+      <td>{item?.examroom?.room?.room_name || "-"}</td>
       <td>
         <div className="flex items-center gap-2">
               <FormModal  table="exam" type="update" data={item} updateExam={__updateExam} />
@@ -143,7 +172,7 @@ const __updateExam=(updatedExam:any)=>{
         <div className="flex items-center justify-between">
           <h1 className="hidden md:block text-lg font-semibold">Examens</h1>
           <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto  mb-8">
-            <TableSearch />
+            <TableSearch onSearch={handleSearch} />
             <div className="flex items-center gap-4 self-end">
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
                 <Image src="/filter.png" alt="" width={14} height={14} />
@@ -156,7 +185,7 @@ const __updateExam=(updatedExam:any)=>{
           </div>
         </div>
         {/* LIST */}
-        <Table columns={columns} renderRow={renderRow} data={exams} />
+        <Table columns={columns} renderRow={renderRow} data={filteredExams} />
         {/* PAGINATION */}
         <Pagination
             currentPage={currentPage}
