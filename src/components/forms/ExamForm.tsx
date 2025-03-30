@@ -148,11 +148,14 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
       }
     );
       if (response.status === 201) {
-        toast("Examen modifié avec succès");
+        toast.success("Examen modifié avec succès");
         console.log(response.data);
         updateExam && updateExam(response.data)
         handleClose()
       }
+      else if (response.status===404 ||response.status===404 ){
+        toast.error(response.data.error)
+      } 
 
     } catch (err: any) {
       console.log(err);
