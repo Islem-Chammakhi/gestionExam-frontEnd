@@ -123,7 +123,9 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         handleClose()
         toast.success("Examen ajouté avec succès");
       }
-      
+      else if (response.status===404 ||response.status===404 ){
+        toast.error(response.data.error)
+      } 
   } catch (err: any) {
     console.log(err);
     if (err.name !== "CanceledError") {
