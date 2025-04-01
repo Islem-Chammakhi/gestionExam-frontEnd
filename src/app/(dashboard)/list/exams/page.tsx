@@ -12,6 +12,8 @@ import RequireAuth from "@/utils/RequireAuth";
 import PersistLogin from '@/utils/PersistLogin';
 import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
 import { search } from '@/lib/data';
+import Session, { SessionType } from "@/components/Session";
+import AlertPopup from "@/components/AlertPopup";
 
 
 const columns = [
@@ -113,6 +115,28 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
     }
 }, [axiosPrivate, router])
 
+  {/*Session*/}
+  const [session, setSession] = useState<SessionType | null>(null);
+
+  // bech ntestiw when a session already exists
+  const sessiontest: SessionType = {
+    sessionType: "EX1",  
+    startDate: "2025-05-01", 
+    endDate: "2025-05-10",
+  };
+
+  useEffect(() => {
+    //setSession(sessiontest); 
+  }, []);
+
+  const handleSubmit = () => {
+    console.log("handle the session creation here ye baby")
+  };
+
+  const [showAlert, setShowAlert] = useState(false);
+
+
+
 const __deleteExam=(id:number)=>{
   const filteredExams = exams.filter((exam) => exam.exam_id !== id)
   setExams(filteredExams)
@@ -164,14 +188,32 @@ const __updateExam=(updatedExam:any)=>{
     </tr>
   );
 
+
   return (
     <PersistLogin>
       <RequireAuth requiredRole="ADMIN">
       <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-        {/* TOP */}
+
+        
+        {/* SESSION */}
+        <div>
+          <h1 className="hidden md:block text-lg font-semibold mb-6">Session</h1>
+          {/* 
+          ======= Pour tester ======= 
+                    Il existe une session:
+                    <Session session={sessiontest} handleSubmit={handleSubmit} />
+                    Il n'existe pas une session:
+                    <Session session={session} handleSubmit={handleSubmit} />
+          ============================
+          */}
+          <Session session={session} handleSubmit={handleSubmit} />
+        </div>
+    
+        
+       {/* EXAM */}
         <div className="flex items-center justify-between">
           <h1 className="hidden md:block text-lg font-semibold">Examens</h1>
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto  mb-8">
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
             <TableSearch onSearch={handleSearch} />
             <div className="flex items-center gap-4 self-end">
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
@@ -180,17 +222,30 @@ const __updateExam=(updatedExam:any)=>{
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
                 <Image src="/sort.png" alt="" width={14} height={14} />
               </button>
-              <FormModal   table="exam" type="create" addExam={__addExam} />
+              {/* create exam - only shown when session exists */}
+              {session && (
+                <FormModal table="exam" type="create" addExam={__addExam} />
+              )}
             </div>
           </div>
         </div>
-        {/* LIST */}
-        <Table columns={columns} renderRow={renderRow} data={filteredExams} />
-        {/* PAGINATION */}
-        <Pagination
-            currentPage={currentPage}
-            count ={totalExams}
-        />
+
+        {/* Alert Popup - shown when trying to create exam without session */}
+        {!session && (
+          <AlertPopup message="Vous devez créer une session avant de pouvoir ajouter des examens" />
+        )}
+
+
+
+
+
+
+        <div className="mt-10">
+          {/* LIST */}
+          <Table columns={columns} renderRow={renderRow} data={filteredExams} />
+          {/* PAGINATION */}
+          <Pagination currentPage={currentPage} count ={totalExams} />
+        </div>
       </div>
       </RequireAuth>
     </PersistLogin>

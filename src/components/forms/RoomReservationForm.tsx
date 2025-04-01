@@ -291,7 +291,7 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
 
       {/* VIEW FORM */}
       {type === "view" && (
-        <div className="flex flex-col gap-4 mt-3">
+        <div className="flex flex-col mt-3">
           {/* TITRE */}
           <h1 className="text-lg font-semibold text-center">Liste des réservations du salle</h1>
 

@@ -35,16 +35,18 @@ const forms: {
     }
     return <span className="text-red-500">Type invalide pour SurveillantForm!</span>;
   },
+
 };
 
-const FormModal = ({ table, type, data, id,deleteExam,addExam,updateExam}: {
-  table: "exam" | "salle" | "surveillant";
+const FormModal = ({ table, type, data, id,deleteExam,addExam,updateExam, onClose}: {
+  table: "exam" | "salle" | "surveillant" | "session";
   type: FormType;
   data?: any;
   id?: number;
   deleteExam ? :(id: number) => void;
   addExam ? :(newExam:any) => void;
   updateExam ? :(updatedExam:any) => void
+  onClose ? : () => void
 }) => {
   const size = "w-8 h-8";
   const bgColor = type === "create" ? "bg-lamaYellow" :

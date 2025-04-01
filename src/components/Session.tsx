@@ -1,0 +1,164 @@
+import React, { useState } from "react";
+import SessionModal from "./SessionModal";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Define Zod schema for session validation
+const sessionSchema = z.object({
+  sessionType: z.string(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide")
+}).refine(data => new Date(data.endDate) > new Date(data.startDate), {
+  message: "La date de fin doit être postérieure à la date de début", 
+  path: ["endDate"],
+}).refine(data => {
+  const start = new Date(data.startDate);
+  const end = new Date(data.endDate);
+  const diffInDays = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
+  return diffInDays >= 7 && diffInDays <= 21; // 1-3 weeks
+}, {
+  message: "La durée de la session doit être entre 1 et 3 semaines",
+  path: ["endDate"],
+}).refine(data => {
+  const today = new Date();
+  const start = new Date(data.startDate);
+  const diffInDays = (start.getTime() - today.getTime()) / (1000 * 3600 * 24);
+  return diffInDays >= 14; // At least 2 weeks
+}, {
+  message: "La session doit commencer au moins 2 semaines après la date actuelle",
+  path: ["startDate"],
+});
+
+// Export the type as SessionType to avoid confusion with component name
+export type SessionType = z.infer<typeof sessionSchema>;
+
+interface SessionFormProps {
+  session: SessionType | null;
+  handleSubmit: (data: SessionType) => void; 
+}
+
+const Session: React.FC<SessionFormProps> = ({ session, handleSubmit }) => {
+  const { register, handleSubmit: handleFormSubmit, formState: { errors } } = useForm<SessionType>({
+    resolver: zodResolver(sessionSchema), 
+    defaultValues: session || undefined
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+
+  const handleSaveSession = (updatedSession: SessionType) => {
+    console.log("Updated session:", updatedSession);
+    // Implement your save logic here
+  };
+
+  return (
+    <div>
+      {!session ? (
+        <form onSubmit={handleFormSubmit(handleSubmit)} className="space-y-4 mb-10">
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <label htmlFor="sessionType" className="block text-sm mb-2">Type session</label>
+              <select 
+                id="sessionType" 
+                {...register("sessionType")} 
+                className={`border p-2.5 rounded w-full text-sm ${errors.sessionType ? "border-red-500" : ""}`}
+              >
+                <option value="DS1">DS1</option>
+                <option value="EX1">EX1</option>
+                <option value="DS2">DS2</option>
+                <option value="EX2">EX2</option>
+                <option value="CONTROLE">CONTROLE</option>
+              </select>
+              {errors.sessionType && <p className="text-red-500 text-xs mt-1">{errors.sessionType.message}</p>}
+            </div>
+
+            <div className="flex-1 mb-1">
+              <label htmlFor="startDate" className="block text-sm mb-2">Date début</label>
+              <input
+                type="date"
+                id="startDate"
+                {...register("startDate")}
+                className={`border p-2 rounded w-full text-sm ${errors.startDate ? "border-red-500" : ""}`}
+              />
+              {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message}</p>}
+            </div>
+
+            <div className="flex-1">
+              <label htmlFor="endDate" className="block text-sm mb-2">Date fin</label>
+              <input
+                type="date"
+                id="endDate"
+                {...register("endDate")}
+                className={`border p-2 rounded w-full text-sm ${errors.endDate ? "border-red-500" : ""}`}
+              />
+              {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message}</p>}
+            </div>
+
+            <div className="flex-1">
+              <button 
+                type="submit" 
+                className="inline-flex items-center justify-center gap-4 rounded w-full bg-[#f9e17c] mt-7 px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-black shadow-sm transition duration-150 ease-in-out hover:bg-[#e6d06b] focus:bg-[#f9e17c] active:bg-[#d9bc5f]"
+              >
+                <img src="/session.png" alt="Session Icon" className="w-5 h-5"/>
+                Créer session
+              </button>
+            </div>
+          </div>
+        </form>
+      ) : (
+        <div className="flex space-x-4 mb-6">
+          <div className="flex-1 mb-4">
+            <label className="block text-sm mb-2">Type session</label>
+            <input 
+              type="text" 
+              value={session.sessionType} 
+              readOnly 
+              className="border p-2 rounded bg-gray-200 w-full text-sm"
+            />
+          </div>
+
+          <div className="flex-1 mb-4">
+            <label className="block text-sm mb-2">Date début</label>
+            <input 
+              type="text" 
+              value={session.startDate} 
+              readOnly 
+              className="border p-2 rounded bg-gray-200 w-full text-sm"
+            />
+          </div>
+
+          <div className="flex-1 mb-4">
+            <label className="block text-sm mb-2">Date fin</label>
+            <input 
+              type="text" 
+              value={session.endDate} 
+              readOnly 
+              className="border p-2 rounded bg-gray-200 w-full text-sm"
+            />
+          </div>
+
+          <div className="flex-1">
+            <button 
+              type="button" 
+              onClick={handleOpenModal}
+              className="inline-flex items-center justify-center gap-4 rounded w-full bg-[#f9e17c] mt-7 px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-black shadow-sm transition duration-150 ease-in-out hover:bg-[#e6d06b] focus:bg-[#f9e17c] active:bg-[#d9bc5f]"
+            >
+              <img src="/edit.png" alt="Modifier Icon" className="w-5 h-5"/>
+              Modifier
+            </button>
+            <SessionModal 
+              open={isModalOpen} 
+              onClose={handleCloseModal} 
+              session={session} 
+              onSave={handleSaveSession}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Session;
