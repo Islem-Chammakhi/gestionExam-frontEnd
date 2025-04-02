@@ -27,6 +27,7 @@ const SurveillantForm = ({type,data,id,handleClose}: {
   id?: number;
   handleClose : ()=>void
 }) => {
+  
   const {
     register,
     handleSubmit,
@@ -275,7 +276,7 @@ const SurveillantForm = ({type,data,id,handleClose}: {
 
       {/* VIEW FORM */}
       {type === "view" && (
-         <div className="flex flex-col gap-4 mt-3">
+         <div className="flex flex-col  mt-3">
             {/* TITRE */}
             <h1 className="text-lg font-semibold text-center">Liste de surveillance d'enseignant</h1>
         

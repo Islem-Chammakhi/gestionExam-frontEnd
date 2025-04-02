@@ -132,7 +132,7 @@ const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => 
           {/* TOP */}
           <div className="flex items-center justify-between">
             <h1 className="hidden md:block text-lg font-semibold">Salles</h1>
-            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto  mb-8">
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto ">
               <TableSearch onSearch={handleSearch} />
               <div className="flex items-center gap-4 self-end">
                 <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
@@ -144,13 +144,15 @@ const ClassListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => 
               </div>
             </div>
           </div>
-          {/* LIST */}
-          <Table columns={columns} renderRow={renderRow} data={filteredRooms} />
-          {/* PAGINATION */}
-          <Pagination
-            currentPage={currentPage}
-            count ={totalRooms}
-          />
+          <div className="mt-10">
+            {/* LIST */}
+            <Table columns={columns} renderRow={renderRow} data={filteredRooms} />
+            {/* PAGINATION */}
+            <Pagination
+              currentPage={currentPage}
+              count ={totalRooms}
+            />
+          </div>
         </div>
       </RequireAuth>
     </PersistLogin>

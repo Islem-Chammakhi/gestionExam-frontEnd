@@ -52,10 +52,10 @@ const AdminPage = () => {
       <div className="w-full lg:w-2/3 flex flex-col gap-8">
         {/* USER CARDS */}
         <div className="flex gap-4 justify-between flex-wrap">
-          <UserCard type="Enseignant" count={counts.totalSupervisors} />
-          <UserCard type="Etudiant" count={counts.totalStudent} />
-          <UserCard type="Sujet" count={counts.totalSubjects} />
-          <UserCard type="Examen" count={counts.totalExams} />
+          <UserCard type="Enseignants" count={counts.totalSupervisors} />
+          <UserCard type="Etudiants" count={counts.totalStudent} />
+          <UserCard type="Matiéres" count={counts.totalSubjects} />
+          <UserCard type="Examens" count={counts.totalExams} />
         </div>
         {/* MIDDLE CHARTS */}
         <div className="flex gap-4 flex-col lg:flex-row">

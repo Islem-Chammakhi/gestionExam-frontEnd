@@ -148,7 +148,7 @@ const TeacherListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) =
           {/* TOP */}
           <div className="flex items-center justify-between">
             <h1 className="hidden md:block text-lg font-semibold">Enseignants </h1>
-            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto  mb-8">
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto  ">
               <TableSearch onSearch={handleSearch} />
               <div className="flex items-center gap-4 self-end">
                 <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
@@ -160,13 +160,15 @@ const TeacherListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) =
               </div>
             </div>
           </div>
-          {/* LIST */}
-          <Table columns={columns} renderRow={renderRow} data={filteredSupervisors} />
-          {/* PAGINATION */}
-          <Pagination
-            currentPage={currentPage}
-            count ={totalSupervisors}
-          />
+          <div className="mt-10">
+            {/* LIST */}
+            <Table columns={columns} renderRow={renderRow} data={filteredSupervisors} />
+            {/* PAGINATION */}
+            <Pagination
+              currentPage={currentPage}
+              count ={totalSupervisors}
+            />
+          </div>
         </div>
     </RequireAuth>
     </PersistLogin>
