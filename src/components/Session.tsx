@@ -3,8 +3,10 @@ import SessionModal from "./SessionModal";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import useAxiosPrivate from '@/hooks/useAxiosPrivate';
+import { toast } from "react-toastify";
 
-// Define Zod schema for session validation
+
 const sessionSchema = z.object({
   sessionType: z.string(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide"),
@@ -16,7 +18,7 @@ const sessionSchema = z.object({
   const start = new Date(data.startDate);
   const end = new Date(data.endDate);
   const diffInDays = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
-  return diffInDays >= 7 && diffInDays <= 21; // 1-3 weeks
+  return diffInDays >= 7 && diffInDays <= 21;
 }, {
   message: "La durée de la session doit être entre 1 et 3 semaines",
   path: ["endDate"],
@@ -24,21 +26,20 @@ const sessionSchema = z.object({
   const today = new Date();
   const start = new Date(data.startDate);
   const diffInDays = (start.getTime() - today.getTime()) / (1000 * 3600 * 24);
-  return diffInDays >= 14; // At least 2 weeks
+  return diffInDays >= 14;
 }, {
   message: "La session doit commencer au moins 2 semaines après la date actuelle",
   path: ["startDate"],
 });
 
-// Export the type as SessionType to avoid confusion with component name
+
 export type SessionType = z.infer<typeof sessionSchema>;
 
 interface SessionFormProps {
   session: SessionType | null;
-  handleSubmit: (data: SessionType) => void; 
 }
 
-const Session: React.FC<SessionFormProps> = ({ session, handleSubmit }) => {
+const Session: React.FC<any> = ({ session}) => {
   const { register, handleSubmit: handleFormSubmit, formState: { errors } } = useForm<SessionType>({
     resolver: zodResolver(sessionSchema), 
     defaultValues: session || undefined
@@ -47,10 +48,29 @@ const Session: React.FC<SessionFormProps> = ({ session, handleSubmit }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
+  const axiosPrivate = useAxiosPrivate();
+
 
   const handleSaveSession = (updatedSession: SessionType) => {
     console.log("Updated session:", updatedSession);
-    // Implement your save logic here
+
+  };
+
+  const handleSubmit = async(data: SessionType) => {
+    console.log("Form data:", data);
+    const abortController = new AbortController()
+    try {
+      const response = await axiosPrivate.post('/sessions', data, {
+        signal: abortController.signal
+      });
+      if(response.status === 201) {
+        toast.success("La session a été créée avec succès !");
+      }
+    } catch(err:any) {
+      if (err.name !== "CanceledError") {
+        toast.error(err.response.data.error)
+      }
+    }
   };
 
   return (
@@ -113,7 +133,7 @@ const Session: React.FC<SessionFormProps> = ({ session, handleSubmit }) => {
             <label className="block text-sm mb-2">Type session</label>
             <input 
               type="text" 
-              value={session.sessionType} 
+              value={session.session_type} 
               readOnly 
               className="border p-2 rounded bg-gray-200 w-full text-sm"
             />
@@ -123,7 +143,7 @@ const Session: React.FC<SessionFormProps> = ({ session, handleSubmit }) => {
             <label className="block text-sm mb-2">Date début</label>
             <input 
               type="text" 
-              value={session.startDate} 
+              value={session.date_debut.slice(0,10)} 
               readOnly 
               className="border p-2 rounded bg-gray-200 w-full text-sm"
             />
@@ -133,7 +153,7 @@ const Session: React.FC<SessionFormProps> = ({ session, handleSubmit }) => {
             <label className="block text-sm mb-2">Date fin</label>
             <input 
               type="text" 
-              value={session.endDate} 
+              value={session.date_fin.slice(0,10)} 
               readOnly 
               className="border p-2 rounded bg-gray-200 w-full text-sm"
             />

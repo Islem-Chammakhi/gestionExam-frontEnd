@@ -115,35 +115,32 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
     }
 }, [axiosPrivate, router])
 
-  {/*Session*/}
-  const [session, setSession] = useState<SessionType | null>(null);
-
-  // bech ntestiw when a session already exists
-  const sessiontest: SessionType = {
-    sessionType: "EX1",  
-    startDate: "2025-05-01", 
-    endDate: "2025-05-10",
-  };
-
+  const [session, setSession] = useState<any | null>(null);
   useEffect(() => {
-    //setSession(sessiontest); 
+    // setSession(sessiontest); 
+    const fetchSession = async () => {
+      try {
+        const response = await axiosPrivate.get('/sessions/current');
+        if (response.status === 200) {
+          setSession(response.data);
+          console.log(response.data)
+        }
+      } catch (error) {
+        console.error("Error fetching session:", error);
+      }
+    };
+    fetchSession();
   }, []);
-
-  const handleSubmit = () => {
-    console.log("handle the session creation here ye baby")
-  };
-
-  const [showAlert, setShowAlert] = useState(false);
-
-
-
+  
 const __deleteExam=(id:number)=>{
   const filteredExams = exams.filter((exam) => exam.exam_id !== id)
   setExams(filteredExams)
 }
+
 const __addExam=(newExam:any)=>{
   setExams((prevExams) => [...prevExams, newExam])
 }
+
 const __updateExam=(updatedExam:any)=>{
   console.log("updated",updatedExam)
   setExams((prevExams) =>
@@ -193,20 +190,10 @@ const __updateExam=(updatedExam:any)=>{
     <PersistLogin>
       <RequireAuth requiredRole="ADMIN">
       <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-
-        
         {/* SESSION */}
         <div>
           <h1 className="hidden md:block text-lg font-semibold mb-6">Session</h1>
-          {/* 
-          ======= Pour tester ======= 
-                    Il existe une session:
-                    <Session session={sessiontest} handleSubmit={handleSubmit} />
-                    Il n'existe pas une session:
-                    <Session session={session} handleSubmit={handleSubmit} />
-          ============================
-          */}
-          <Session session={session} handleSubmit={handleSubmit} />
+          <Session session={session} />
         </div>
     
         
