@@ -12,7 +12,7 @@ import RequireAuth from "@/utils/RequireAuth";
 import PersistLogin from '@/utils/PersistLogin';
 import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
 import { search } from '@/lib/data';
-import Session, { SessionType } from "@/components/Session";
+import Session from "@/components/Session";
 import AlertPopup from "@/components/AlertPopup";
 
 
@@ -58,6 +58,10 @@ const columns = [
     accessor: "salle",
   },
   {
+    header: "Superviseur",
+    accessor: "superviseur",
+  },
+  {
     header: "Actions",
     accessor: "action",
   },
@@ -74,6 +78,7 @@ const keys= [
   "examroom.start_time",
   "examroom.end_time",
   "examroom.room.room_name",
+  "supervisorexam[0].teacher.user.name",
 ];
 
 const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
@@ -81,6 +86,8 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
   const [filteredExams, setFilteredExams] = useState<any[]>([]);
+  const [session, setSession] = useState<any | null>(null);
+  const [shouldReloadExams, setShouldReloadExams] = useState(false)
   const [searchQuery, setSearchQuery] = useState("");
   const { page, ...queryParams } = searchParams || {};
   const currentPage = page ? parseInt(page) : 1
@@ -91,14 +98,17 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
   
     const getExams = async () => {
         try {
-            const response = await axiosPrivate.get('/exams/getAllExams/'+currentPage, {
+          if (!session) {
+            return;
+          }
+            const response = await axiosPrivate.get('/exams/getAllExams/'+currentPage+'/'+session?.session_id, {
                 signal: controller.signal
             });
             console.log(response.data);
             if (response.status === 200) {
-              setExams(response.data); 
+              setExams(response.data);
+              setShouldReloadExams(false); 
             }
-            
         } catch (err: any) {
           console.log(err);
           if (err.name !== "CanceledError") {
@@ -108,28 +118,34 @@ const ExamListPage = ({searchParams}:{searchParams?:{[key:string]:string}}) => {
           }
     }
 
-    getExams();
+    if (session || shouldReloadExams) {
+      getExams();
+    }
 
     return () => {
         controller.abort();
     }
-}, [axiosPrivate, router])
+}, [axiosPrivate, router, currentPage, session, shouldReloadExams])
 
-  const [session, setSession] = useState<any | null>(null);
   useEffect(() => {
-    // setSession(sessiontest); 
+    const controller = new AbortController();
     const fetchSession = async () => {
       try {
         const response = await axiosPrivate.get('/sessions/current');
         if (response.status === 200) {
           setSession(response.data);
-          console.log(response.data)
+          setShouldReloadExams(true)
         }
       } catch (error) {
         console.error("Error fetching session:", error);
       }
     };
-    fetchSession();
+
+    !session && fetchSession();
+
+    return () => {
+      controller.abort();
+  }
   }, []);
   
 const __deleteExam=(id:number)=>{
@@ -176,9 +192,12 @@ const __updateExam=(updatedExam:any)=>{
       <td>{durationTable[item.duration as DurationKey]}h</td>
       <td>{coefTable[item.subject.coefficient as CoefficientKey]}</td>
       <td>{item?.examroom?.room?.room_name || "-"}</td>
+      <td>{item?.supervisorexam?.[0]?.teacher?.user?.name || "-"}</td>
+      
       <td>
         <div className="flex items-center gap-2">
-              <FormModal  table="exam" type="update" data={item} updateExam={__updateExam} />
+      
+              <FormModal  table="exam" type="update" data={item} updateExam={__updateExam}  session={session} />
               <FormModal  table="exam"  type="delete" id={item.exam_id} deleteExam={__deleteExam} />
         </div>
       </td>
@@ -193,7 +212,13 @@ const __updateExam=(updatedExam:any)=>{
         {/* SESSION */}
         <div>
           <h1 className="hidden md:block text-lg font-semibold mb-6">Session</h1>
-          <Session session={session} />
+          <Session 
+          session={session}
+          onSessionCreated={(newSession:any) => {
+            setSession(newSession);
+            setShouldReloadExams(true);
+          }}
+          />
         </div>
     
         
@@ -211,7 +236,7 @@ const __updateExam=(updatedExam:any)=>{
               </button>
               {/* create exam - only shown when session exists */}
               {session && (
-                <FormModal table="exam" type="create" addExam={__addExam} />
+                <FormModal table="exam" type="create" addExam={__addExam} session={session} />
               )}
             </div>
           </div>

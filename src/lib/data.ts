@@ -23,17 +23,11 @@ export const search = (data: any[], query: string, keys: string[]) => {
   if (!query) return data;
   
   const lowerQuery = query.toLowerCase();
-  
+  console.log(data)
   return data.filter((item) => {
     return keys.some((key) => {
       // Gestion des clés imbriquées
       const value = key.split('.').reduce((obj, k) => obj?.[k], item);
-      console.log(keys)
-      // // Conversion des dates en format lisible si nécessaire
-      // if (value instanceof Date || key.includes('_time')) {
-      //   return new Date(value).toLocaleString().toLowerCase().includes(lowerQuery);
-      // }
-      
       // // Conversion des enums/constantes en string
       if (key === 'duration' || key === 'exam.duration') {
         return String(durationTable[value as DurationKey]).toLowerCase().includes(lowerQuery);
@@ -41,6 +35,11 @@ export const search = (data: any[], query: string, keys: string[]) => {
 
       if (key === 'subject.coefficient' || key === 'exam.subject.coefficient') {
         return String(coefTable[value as CoefficientKey]).toLowerCase().includes(lowerQuery);
+      }
+
+      if (key === 'supervisorexam[0].teacher.user.name') {
+        const name = item.supervisorexam?.[0]?.teacher?.user?.name;
+        return name?.toLowerCase().includes(lowerQuery) || false;
       }
 
       return String(value).toLowerCase().includes(lowerQuery);

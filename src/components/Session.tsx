@@ -36,10 +36,11 @@ const sessionSchema = z.object({
 export type SessionType = z.infer<typeof sessionSchema>;
 
 interface SessionFormProps {
-  session: SessionType | null;
+  session: any | null;
+  onSessionCreated?: (session: any) => void;
 }
 
-const Session: React.FC<any> = ({ session}) => {
+const Session: React.FC<SessionFormProps> = ({ session, onSessionCreated }) => {
   const { register, handleSubmit: handleFormSubmit, formState: { errors } } = useForm<SessionType>({
     resolver: zodResolver(sessionSchema), 
     defaultValues: session || undefined
@@ -65,6 +66,9 @@ const Session: React.FC<any> = ({ session}) => {
       });
       if(response.status === 201) {
         toast.success("La session a été créée avec succès !");
+        if (onSessionCreated) {
+          onSessionCreated(response.data);
+        }
       }
     } catch(err:any) {
       if (err.name !== "CanceledError") {

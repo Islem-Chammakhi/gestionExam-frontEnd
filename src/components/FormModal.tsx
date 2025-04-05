@@ -13,11 +13,11 @@ type FormType = "create" | "update" | "delete" | "reserve" | "view" | "assign";
 
 // Define the forms object
 const forms: {
-  [key: string]: (type: FormType, handleClose: () => void,data?: any, id?: number ,addExam?: (newExam: any) => void,updateExam?: (updatedExam: any) => void) => JSX.Element;
+  [key: string]: (type: FormType, handleClose: () => void,data?: any, id?: number ,addExam?: (newExam: any) => void,updateExam?: (updatedExam: any) => void,session?:any) => JSX.Element;
 } = {
-  exam: (type,handleClose, data, id,addExam,updateExam,) => {
+  exam: (type,handleClose, data, id,addExam,updateExam,session) => {
     if (type === "create" || type === "update") {
-      return <ExamForm type={type} handleClose={handleClose} data={data} id={id}  addExam={addExam} updateExam={updateExam} />;
+      return <ExamForm type={type} handleClose={handleClose} data={data} id={id}  addExam={addExam} updateExam={updateExam} session={session} />;
     }
     return <span className="text-red-500">Type invalide pour ExamForm !</span>;
   },
@@ -38,11 +38,12 @@ const forms: {
 
 };
 
-const FormModal = ({ table, type, data, id,deleteExam,addExam,updateExam, onClose}: {
+const FormModal = ({ table, type, data, id,deleteExam,addExam,updateExam, onClose,session}: {
   table: "exam" | "salle" | "surveillant" | "session";
   type: FormType;
   data?: any;
   id?: number;
+  session?:any
   deleteExam ? :(id: number) => void;
   addExam ? :(newExam:any) => void;
   updateExam ? :(updatedExam:any) => void
@@ -101,7 +102,8 @@ const FormModal = ({ table, type, data, id,deleteExam,addExam,updateExam, onClos
 
     // Render the appropriate form based on the table and type
     if (forms[table]) {
-      return forms[table](type,handleClose, data, id,addExam,updateExam);
+      console.log("session",session,"azeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+      return forms[table](type,handleClose, data, id,addExam,updateExam,session);
     }
 
     // If no form is found

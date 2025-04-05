@@ -35,13 +35,14 @@ interface Subject {
   filiere_name:string
 }
 
-const ExamForm = ({type,data,id,addExam,updateExam,handleClose}: {
+const ExamForm = ({type,data,id,addExam,updateExam,handleClose,session}: {
   type: "create" | "update";
   data?: any;
   id?: number;
   addExam ? :(id: number) => void;
   updateExam?: (updatedExam: any)=>void
   handleClose : ()=>void
+  session: any
 }) => {
   const {
     register,
@@ -98,12 +99,14 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
 
 
     try {
+      console.log(session,"muchachos")
       const response = await axiosPrivate.post('/exams/createExam/', 
       {
         subject_id: (formData as CreateInputs).examen,
         duration: selectedDurationKey,
         exam_date:  (formData as CreateInputs).date,
         email: auth.email,
+        session: session
       },
       {
         signal: controller.signal,
@@ -123,25 +126,33 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         handleClose()
         toast.success("Examen ajouté avec succès");
       }
-      else if (response.status===404 ||response.status===404 ){
-        toast.error(response.data.error)
-      } 
+
   } catch (err: any) {
     console.log(err);
     if (err.name !== "CanceledError") {
-      console.error("Erreur lors de la récupération des examens:", err);        
-      toast.error("❌ Erreur lors de l'ajout' de l'examen");
+       if ([409, 404, 400].includes(err.response?.status)) {
+        toast.error(err.response.data.error);
+      }
+      else{
+        console.error("Erreur lors de la récupération des examens:", err);        
+        toast.error(" Erreur lors de l'ajout' de l'examen");
+      } 
+
   }
   }});
 
 
   const __updateExam = handleSubmit(async (formData) => {
     const inpuForm = formData as UpdateInputs;
+    console.log("a7aaaaaaaaaaaaa",data.subject.subject_id)
     const controller = new AbortController();
     try {
       const response = await axiosPrivate.put('/exams/updateExam/'+data.exam_id, 
       {
         exam_date: inpuForm.date,
+        session: session,
+        subject_id: data.subject.subject_id,
+
       },
       {
         signal: controller.signal,
