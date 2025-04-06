@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 import { toast } from "react-toastify";
+import Countdown from "./Countdown";
 
 
 const sessionSchema = z.object({
@@ -64,11 +65,15 @@ const Session: React.FC<any> = ({ session}) => {
         signal: abortController.signal
       });
       if(response.status === 201) {
-        toast.success("La session a été créée avec succès !");
+        toast.success("La session a été créée avec succès!", {
+          className: "bg-white text-black",
+        });
       }
     } catch(err:any) {
       if (err.name !== "CanceledError") {
-        toast.error(err.response.data.error)
+        toast.error(err.response.data.error, {
+          className: "bg-white text-black",
+        });        
       }
     }
   };
@@ -130,7 +135,7 @@ const Session: React.FC<any> = ({ session}) => {
       ) : (
         <div className="flex space-x-4 mb-6">
           <div className="flex-1 mb-4">
-            <label className="block text-sm mb-2">Type session</label>
+            <label className="block text-sm mb-2">Type session:</label>
             <input 
               type="text" 
               value={session.session_type} 
@@ -140,7 +145,7 @@ const Session: React.FC<any> = ({ session}) => {
           </div>
 
           <div className="flex-1 mb-4">
-            <label className="block text-sm mb-2">Date début</label>
+            <label className="block text-sm mb-2">Date début:</label>
             <input 
               type="text" 
               value={session.date_debut.slice(0,10)} 
@@ -150,7 +155,7 @@ const Session: React.FC<any> = ({ session}) => {
           </div>
 
           <div className="flex-1 mb-4">
-            <label className="block text-sm mb-2">Date fin</label>
+            <label className="block text-sm mb-2">Date fin:</label>
             <input 
               type="text" 
               value={session.date_fin.slice(0,10)} 
@@ -159,7 +164,14 @@ const Session: React.FC<any> = ({ session}) => {
             />
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 mb-4 pl-6">
+            <label className="block text-sm ">Temps restant:</label>
+            <Countdown date_debut={session.date_debut.slice(0,10)} />
+          </div>
+
+          
+
+          {/* <div className="flex-1">
             <button 
               type="button" 
               onClick={handleOpenModal}
@@ -174,7 +186,8 @@ const Session: React.FC<any> = ({ session}) => {
               session={session} 
               onSave={handleSaveSession}
             />
-          </div>
+          </div> */}
+
         </div>
       )}
     </div>

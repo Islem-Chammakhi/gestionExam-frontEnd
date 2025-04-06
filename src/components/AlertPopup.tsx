@@ -9,7 +9,7 @@ const AlertPopup = ({ message }: { message: string }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-    }, 7000); // 7 seconds
+    }, 9000); // 9 seconds
 
     return () => clearTimeout(timer);
   }, []);
@@ -21,7 +21,7 @@ const AlertPopup = ({ message }: { message: string }) => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-8 right-8 bg-white p-3 rounded-md shadow-lg max-w-xs z-50 border border-gray-200 border-l-4 border-l-red-500 animate-fade-in-up">
+    <div className="fixed bottom-8 right-8 bg-white p-3 rounded-md shadow-lg max-w-xs z-40 border border-gray-200 border-l-4 border-l-red-500 animate-fade-in-up">
       <div className="flex justify-between items-center mb-1">
         <div className="flex items-center gap-2">
           <img 

@@ -14,6 +14,7 @@ import { CoefficientKey,DurationKey,coefTable,durationTable } from '@/lib/data';
 import { search } from '@/lib/data';
 import Session, { SessionType } from "@/components/Session";
 import AlertPopup from "@/components/AlertPopup";
+import NotificationDropdown from '@/components/NotificationDropdown';
 
 
 const columns = [
@@ -185,6 +186,8 @@ const __updateExam=(updatedExam:any)=>{
     </tr>
   );
 
+  
+
 
   return (
     <PersistLogin>
@@ -200,6 +203,7 @@ const __updateExam=(updatedExam:any)=>{
        {/* EXAM */}
         <div className="flex items-center justify-between">
           <h1 className="hidden md:block text-lg font-semibold">Examens</h1>
+          
           <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
             <TableSearch onSearch={handleSearch} />
             <div className="flex items-center gap-4 self-end">
@@ -218,13 +222,11 @@ const __updateExam=(updatedExam:any)=>{
         </div>
 
         {/* Alert Popup - shown when trying to create exam without session */}
-        {!session && (
+        {!session ? (
           <AlertPopup message="Vous devez créer une session avant de pouvoir ajouter des examens" />
+        ) : (
+          <AlertPopup message="Il est recommandé de valider tous les examens quelques jours avant le début de la session." />
         )}
-
-
-
-
 
 
         <div className="mt-10">
