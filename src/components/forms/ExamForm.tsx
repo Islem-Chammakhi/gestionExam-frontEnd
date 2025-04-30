@@ -144,7 +144,6 @@ const handleExamenChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
 
   const __updateExam = handleSubmit(async (formData) => {
     const inpuForm = formData as UpdateInputs;
-    console.log("a7aaaaaaaaaaaaa",data.subject.subject_id)
     const controller = new AbortController();
     try {
       const response = await axiosPrivate.put('/exams/updateExam/'+data.exam_id, 
