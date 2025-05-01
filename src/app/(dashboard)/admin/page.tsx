@@ -11,6 +11,7 @@ import useAxiosPrivate from '@/hooks/useAxiosPrivate';
 
 
 
+
 const AdminPage = () => {
   const [counts, setCounts] = useState({ totalSupervisors: 0, totalStudent: 0, totalSubjects: 0, totalExams: 0, examByDep: [], availableRooms: 0, notAvailableRooms: 0, totalRooms: 0 ,logs: []});
   const axiosPrivate=useAxiosPrivate()

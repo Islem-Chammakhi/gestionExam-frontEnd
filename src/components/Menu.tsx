@@ -1,13 +1,15 @@
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import useLogout from "@/hooks/useLogout";
+
 const menuItems = [
   {
     title: "MENU",
     items: [
       {
         icon: "/home.png",
-        label: "Home",
+        label: "Acceuil",
         href: "/admin",
         visible: "ADMIN",
       },
@@ -29,7 +31,14 @@ const menuItems = [
         href: "/list/surveillants",
         visible: "ADMIN",
       },
-      // {
+      {
+        icon: "/historique.png",
+        label: "Historique",
+        href: "/list/historique",
+        visible: "ADMIN",
+      },
+
+          // {
       //   icon: "/approved.png",
       //   label: "Valider planning",
       //   href: "/chef",
@@ -41,12 +50,12 @@ const menuItems = [
       //   href: "/",
       //   visible: "CHEF",
       // },
+      
       {
         icon: "/home.png",
         label: "Home",
         href: "/chef",
         visible: "CHEF",
-
       },
       {
         icon: "/check.png",
@@ -84,16 +93,22 @@ interface MenuProps {
 }
 
 const Menu = ({ role }: MenuProps) => {
+  const pathname = usePathname();
   const logout = useLogout();
+
+  const isActive = (href: string) => {
+    return pathname === href;
+  };
+
   return (
     <div className="mt-4 text-sm">
-      {menuItems.map((i) => (
-        <div className="flex flex-col gap-2" key={i.title}>
+      {menuItems.map((group) => (
+        <div className="flex flex-col gap-2" key={group.title}>
           <span className="hidden lg:block text-gray-400 font-light my-4">
-            {i.title}
+            {group.title}
           </span>
-          {i.items.map((item) => {
-            if(item.label==="Logout"){
+          {group.items.map((item) => {
+            if (item.label === "Logout") {
               return (
                 <button
                   onClick={logout}
@@ -104,19 +119,21 @@ const Menu = ({ role }: MenuProps) => {
                   <span className="hidden lg:block">{item.label}</span>
                 </button>
               );
-            }
-            else if ('visible' in item && item.visible === role) {
+            } else if ('visible' in item && item.visible === role) {
               return (
                 <Link
                   href={item.href}
                   key={item.label}
-                  className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-1 rounded-md hover:bg-lamaSkyLight"
+                  className={`flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2 md:px-1 rounded-md hover:bg-lamaSkyLight ${
+                    isActive(item.href) ? "bg-lamaSkyLight" : ""
+                  }`}
                 >
                   <Image src={item.icon} alt="" width={20} height={20} />
                   <span className="hidden lg:block">{item.label}</span>
                 </Link>
               );
             }
+            return null;
           })}
         </div>
       ))}

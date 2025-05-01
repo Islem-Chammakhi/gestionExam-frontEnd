@@ -81,7 +81,7 @@ const LoginPage: React.FC = () => {
                   htmlFor="email"
                   className="block text-sm/6 font-medium text-gray-900"
                 >
-                  Addresse E-mail
+                  Adresse E-mail
                 </label>
                 <div className="mt-2">
                   <input
@@ -130,6 +130,7 @@ const LoginPage: React.FC = () => {
                 <span className="block sm:inline">{errMsg}</span>
               </div>}
             </form>
+            
           </div>
         </div>
       </div>
