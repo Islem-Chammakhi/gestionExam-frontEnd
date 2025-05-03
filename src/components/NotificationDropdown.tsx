@@ -2,9 +2,13 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import SendNotificationForm from './forms/SendNotificationForm';
+import useAxiosPrivate from '@/hooks/useAxiosPrivate';
+import useAuth from '@/hooks/useAuth';
+import { toast } from 'react-toastify';
 
 export default function NotificationDropdown() {
-
+  const {auth} = useAuth()
+  const axiosPrivate = useAxiosPrivate();
   {/* Notification box */}
   const [isOpen, setIsOpen] = useState(false);
 
@@ -17,12 +21,29 @@ export default function NotificationDropdown() {
 
   
   {/* Exemple de notifications */}
-  const [notifications, setNotifications] = useState([
-    { id: '1', message: 'Le directeur des études a validé la session de sa part', time: '04-04-2025', read: false },
-    { id: '2', message: 'Le chef de département (Informatique) a validé la session de sa part', time: '01-04-2025', read: false },
-    { id: '3', message: 'Le chef de département (Technologique) a validé la session de sa part', time: '29-03-2025', read: true },
-    { id: '4', message: 'Le chef de département (Mathématiques) a validé la session de sa part', time: '25-03-2025', read: true },
-  ]);
+  const [notifications, setNotifications] = useState<{ id: string; message: string; time: string; read: boolean }[]>([]);
+
+  const loadNotifications = async () => {
+    const controller = new AbortController();
+    try {
+      const response=await axiosPrivate.get('/notifications/'+ auth.email, {
+        signal: controller.signal,
+      })
+      if (response.status === 200) {
+        setNotifications(response.data.map((n: { notification_id: string; message: string; created_at: string; notification_status: string }) => ({
+          id: n.notification_id,
+          message: n.message,
+          time: new Date(n.created_at).toLocaleDateString(),
+          read: n.notification_status === 'ENVOYEE' ? false : true,
+        })));
+      }
+
+    } catch (error:any) {
+      toast.error(error.response.data.error)
+    } finally {
+      controller.abort();
+    }
+  };
 
   {/* Nombre de notifications non lu */}
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -41,21 +62,63 @@ export default function NotificationDropdown() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 2*60*1000);
+    return () => clearInterval(interval);
+  },[])
+  
    {/* Marquer un seul notifications comme lu lors du click sur le souris */}
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const markAsRead =async (id: string) => {
+    const controller = new AbortController();
+    try{
+      const response=await axiosPrivate.post('/notifications/mark-as-read', { notification_id: parseInt(id), email: auth.email })
+      if (response.status === 200) {
+        setNotifications(notifications.map(n => 
+          n.id === id ? { ...n, read: true } : n
+        ));
+      }
+    }catch(error:any){
+      toast.error(error.response.data.error);
+    }
+    finally {
+      controller.abort();
+    }
   };
 
    {/* Marquer tous les notifications comme lu */}
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    const controller = new AbortController();
+    try{
+      const response=await axiosPrivate.post('/notifications/mark-all-as-read', { email: auth.email })
+      if (response.status === 200) {
+        setNotifications(notifications.map(n => ({ ...n, read: true })));
+      }
+    }catch(error:any){
+      toast.error(error.response.data.error);
+    }
+    finally {
+      controller.abort();
+    }
+    
   };
 
    {/* Effacer tous les notifications */}
-  const clearAllNotifications = () => {
-    setNotifications([]);
+  const clearAllNotifications =async () => {
+    const controller = new AbortController();
+    try{
+      const response=await axiosPrivate.post('/notifications/mark-all-as-read', { email: auth.email })
+      if (response.status === 200) {
+        console.log("biz9i9i")
+        setNotifications([]);
+      }
+    }catch(error:any){
+      toast.error(error.response.data.error);
+    }
+    finally {
+      controller.abort();
+    }
+    
   };
 
   return (
